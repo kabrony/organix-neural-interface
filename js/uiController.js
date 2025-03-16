@@ -43,6 +43,9 @@ export class UIController {
         // Setup event bus listeners
         this.setupEventBusListeners();
         
+        // Load saved settings
+        this.loadSavedSettings();
+        
         // Initial UI update
         this.updateUI();
     }
@@ -76,9 +79,14 @@ export class UIController {
         this.elements.postProcessing = document.getElementById('post-processing');
         this.elements.cameraInertia = document.getElementById('camera-inertia');
         this.elements.autoRotate = document.getElementById('auto-rotate');
+        this.elements.mcpMode = document.getElementById('mcp-mode');
         this.elements.mcpEndpoint = document.getElementById('mcp-endpoint');
         this.elements.apiKey = document.getElementById('api-key');
         this.elements.connectMcpButton = document.getElementById('connect-mcp');
+        this.elements.disconnectMcpButton = document.getElementById('disconnect-mcp');
+        this.elements.debugMode = document.getElementById('debug-mode');
+        this.elements.mcpLogLevel = document.getElementById('mcp-log-level');
+        this.elements.clearStorageButton = document.getElementById('clear-storage');
         
         // Status indicators
         this.elements.mcpStatus = document.getElementById('mcp-status');
@@ -125,12 +133,17 @@ export class UIController {
             button.addEventListener('click', this.handleVisualPresetChange.bind(this));
         });
         
-        // Setting controls
+        // Settings controls
         this.elements.qualityPreset.addEventListener('change', this.handleQualityChange.bind(this));
         this.elements.postProcessing.addEventListener('change', this.handlePostProcessingChange.bind(this));
         this.elements.cameraInertia.addEventListener('input', this.handleCameraInertiaChange.bind(this));
         this.elements.autoRotate.addEventListener('change', this.handleAutoRotateChange.bind(this));
+        this.elements.mcpMode.addEventListener('change', this.handleMcpModeChange.bind(this));
         this.elements.connectMcpButton.addEventListener('click', this.handleConnectMcp.bind(this));
+        this.elements.disconnectMcpButton.addEventListener('click', this.handleDisconnectMcp.bind(this));
+        this.elements.debugMode.addEventListener('change', this.handleDebugModeChange.bind(this));
+        this.elements.mcpLogLevel.addEventListener('change', this.handleMcpLogLevelChange.bind(this));
+        this.elements.clearStorageButton.addEventListener('click', this.handleClearStorage.bind(this));
         
         // Context panel
         document.getElementById('query-object').addEventListener('click', this.handleQuerySelectedObject.bind(this));
@@ -146,12 +159,64 @@ export class UIController {
         this.eventBus.subscribe('mcp:typingStart', this.showTypingIndicator.bind(this));
         this.eventBus.subscribe('mcp:typingEnd', this.hideTypingIndicator.bind(this));
         this.eventBus.subscribe('mcp:error', this.handleMcpError.bind(this));
+        this.eventBus.subscribe('mcp:configLoaded', this.handleMcpConfigLoaded.bind(this));
         
         // Scene events
         this.eventBus.subscribe('scene:objectSelected', this.handleObjectSelected.bind(this));
         
         // UI events (mostly for notifications)
         this.eventBus.subscribe('ui:notification', this.showNotification.bind(this));
+        this.eventBus.subscribe('ui:toggleConnectionPanel', () => this.togglePanel('settingsPanel'));
+    }
+    
+    /**
+     * Load saved settings from localStorage
+     */
+    loadSavedSettings() {
+        try {
+            // Load quality preset
+            const savedQuality = localStorage.getItem('organix-quality-preset');
+            if (savedQuality) {
+                this.elements.qualityPreset.value = savedQuality;
+                this.handleQualityChange({ target: this.elements.qualityPreset });
+            }
+            
+            // Load post-processing setting
+            const savedPostProcessing = localStorage.getItem('organix-post-processing');
+            if (savedPostProcessing !== null) {
+                this.elements.postProcessing.checked = savedPostProcessing === 'true';
+                this.handlePostProcessingChange({ target: this.elements.postProcessing });
+            }
+            
+            // Load MCP mode
+            const savedMcpMode = localStorage.getItem('organix-mcp-mode');
+            if (savedMcpMode) {
+                this.elements.mcpMode.value = savedMcpMode;
+            }
+            
+            // Load MCP endpoint
+            const savedMcpEndpoint = localStorage.getItem('organix-mcp-endpoint');
+            if (savedMcpEndpoint) {
+                this.elements.mcpEndpoint.value = savedMcpEndpoint;
+            }
+            
+            // Load debug mode
+            const savedDebugMode = localStorage.getItem('organix-debug-mode');
+            if (savedDebugMode !== null) {
+                this.elements.debugMode.checked = savedDebugMode === 'true';
+                this.handleDebugModeChange({ target: this.elements.debugMode });
+            }
+            
+            // Load MCP log level
+            const savedMcpLogLevel = localStorage.getItem('organix-mcp-log-level');
+            if (savedMcpLogLevel) {
+                this.elements.mcpLogLevel.value = savedMcpLogLevel;
+            }
+            
+            console.log('Loaded saved settings from localStorage');
+        } catch (error) {
+            console.error('Error loading saved settings:', error);
+        }
     }
     
     /**
@@ -298,17 +363,23 @@ export class UIController {
     /**
      * Handle quality preset change
      */
-    handleQualityChange() {
-        const quality = this.elements.qualityPreset.value;
+    handleQualityChange(event) {
+        const quality = event.target.value || this.elements.qualityPreset.value;
         this.eventBus.publish('settings:quality', quality);
+        
+        // Save setting
+        localStorage.setItem('organix-quality-preset', quality);
     }
     
     /**
      * Handle post-processing toggle
      */
-    handlePostProcessingChange() {
-        const enabled = this.elements.postProcessing.checked;
+    handlePostProcessingChange(event) {
+        const enabled = event.target.checked || this.elements.postProcessing.checked;
         this.eventBus.publish('settings:postProcessing', enabled);
+        
+        // Save setting
+        localStorage.setItem('organix-post-processing', enabled.toString());
     }
     
     /**
@@ -328,20 +399,132 @@ export class UIController {
     }
     
     /**
+     * Handle MCP mode change
+     */
+    handleMcpModeChange() {
+        const mode = this.elements.mcpMode.value;
+        this.eventBus.publish('settings:mcpMode', mode);
+        
+        // Save setting
+        localStorage.setItem('organix-mcp-mode', mode);
+        
+        // Update UI based on selected mode
+        this.updateMcpModeUI(mode);
+    }
+    
+    /**
+     * Update UI elements based on MCP mode
+     * @param {string} mode - MCP mode ('real' or 'simulation')
+     */
+    updateMcpModeUI(mode) {
+        if (mode === 'real') {
+            // Show real MCP connection fields
+            this.elements.mcpEndpoint.parentElement.style.display = 'flex';
+            this.elements.apiKey.parentElement.style.display = 'flex';
+            this.elements.connectMcpButton.textContent = 'Connect to Claude MCP';
+            this.elements.disconnectMcpButton.style.display = 'inline-block';
+        } else {
+            // Hide real MCP connection fields
+            this.elements.mcpEndpoint.parentElement.style.display = 'none';
+            this.elements.apiKey.parentElement.style.display = 'none';
+            this.elements.connectMcpButton.textContent = 'Enable Simulation Mode';
+            this.elements.disconnectMcpButton.style.display = 'none';
+        }
+    }
+    
+    /**
      * Handle connect MCP button click
      */
     handleConnectMcp() {
-        const endpoint = this.elements.mcpEndpoint.value.trim();
-        const apiKey = this.elements.apiKey.value.trim();
+        const mode = this.elements.mcpMode.value;
         
-        if (endpoint) {
-            this.eventBus.publish('ui:connectMCP', endpoint, apiKey);
+        if (mode === 'real') {
+            const endpoint = this.elements.mcpEndpoint.value.trim();
+            const apiKey = this.elements.apiKey.value.trim();
+            
+            if (endpoint) {
+                // Save MCP endpoint for future use
+                localStorage.setItem('organix-mcp-endpoint', endpoint);
+                
+                // Publish connect event
+                this.eventBus.publish('mcp:connect', {
+                    endpoint,
+                    apiKey
+                });
+            } else {
+                this.showNotification({
+                    type: 'error',
+                    message: 'Please enter a valid MCP endpoint URL',
+                    duration: 5000
+                });
+            }
         } else {
+            // Enable simulation mode
+            this.eventBus.publish('settings:mcpMode', 'simulation');
+        }
+    }
+    
+    /**
+     * Handle disconnect MCP button click
+     */
+    handleDisconnectMcp() {
+        this.eventBus.publish('mcp:disconnect');
+    }
+    
+    /**
+     * Handle debug mode toggle
+     */
+    handleDebugModeChange() {
+        const enabled = this.elements.debugMode.checked;
+        this.eventBus.publish('settings:debugMode', enabled);
+        
+        // Enable/disable EventBus debug mode
+        if (window.organixEvents) {
+            window.organixEvents.setDebugMode(enabled);
+        }
+        
+        // Save setting
+        localStorage.setItem('organix-debug-mode', enabled.toString());
+    }
+    
+    /**
+     * Handle MCP log level change
+     */
+    handleMcpLogLevelChange() {
+        const level = this.elements.mcpLogLevel.value;
+        this.eventBus.publish('settings:mcpLogLevel', level);
+        
+        // Save setting
+        localStorage.setItem('organix-mcp-log-level', level);
+    }
+    
+    /**
+     * Handle clear storage button click
+     */
+    handleClearStorage() {
+        // Show confirmation dialog
+        if (confirm('Are you sure you want to clear all saved settings? This will reset preferences, connection settings, and visualization options.')) {
+            // Clear all ORGANIX-related localStorage items
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('organix-')) {
+                    keysToRemove.push(key);
+                }
+            }
+            
+            // Remove keys
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            
+            // Show notification
             this.showNotification({
-                type: 'error',
-                message: 'Please enter a valid MCP endpoint URL',
-                duration: 5000
+                type: 'success',
+                message: 'All saved settings have been cleared',
+                duration: 3000
             });
+            
+            // Reload the page to apply default settings
+            setTimeout(() => window.location.reload(), 1000);
         }
     }
     
@@ -376,15 +559,24 @@ export class UIController {
         switch (status) {
             case 'connected':
                 this.elements.mcpStatus.querySelector('.status-text').textContent = 'MCP: Connected';
+                // Update connect button
+                this.elements.connectMcpButton.disabled = true;
+                this.elements.disconnectMcpButton.disabled = false;
                 break;
                 
             case 'connecting':
                 this.elements.mcpStatus.querySelector('.status-text').textContent = 'MCP: Connecting...';
+                // Update connect button
+                this.elements.connectMcpButton.disabled = true;
+                this.elements.disconnectMcpButton.disabled = true;
                 break;
                 
             case 'disconnected':
             default:
                 this.elements.mcpStatus.querySelector('.status-text').textContent = 'MCP: Disconnected';
+                // Update connect button
+                this.elements.connectMcpButton.disabled = false;
+                this.elements.disconnectMcpButton.disabled = true;
                 break;
         }
     }
@@ -404,9 +596,25 @@ export class UIController {
     handleMcpError(error) {
         this.showNotification({
             type: 'error',
-            message: error.message,
+            message: error.message || 'An error occurred with MCP',
             duration: 5000
         });
+    }
+    
+    /**
+     * Handle MCP config loaded
+     * @param {object} config - MCP configuration
+     */
+    handleMcpConfigLoaded(config) {
+        // Update endpoint input field
+        if (config.endpoint) {
+            this.elements.mcpEndpoint.value = config.endpoint;
+        }
+        
+        // Update API key placeholder if previously set
+        if (config.apiKeyWasSet) {
+            this.elements.apiKey.placeholder = '******** (previously set)';
+        }
     }
     
     /**
