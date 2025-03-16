@@ -158,14 +158,44 @@
                 <div class="settings-section">
                     <h3>MCP Integration</h3>
                     <div class="setting-item">
+                        <label for="mcp-mode">MCP Mode</label>
+                        <select id="mcp-mode">
+                            <option value="simulation" selected>Simulation (Demo)</option>
+                            <option value="real">Real Claude Connection</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
                         <label for="mcp-endpoint">Endpoint URL</label>
-                        <input type="text" id="mcp-endpoint" value="http://localhost:8080/mcp">
+                        <input type="text" id="mcp-endpoint" value="ws://localhost:8080/mcp">
                     </div>
                     <div class="setting-item">
                         <label for="api-key">API Key</label>
                         <input type="password" id="api-key" placeholder="Enter your API key">
                     </div>
-                    <button id="connect-mcp" class="primary-button">Connect</button>
+                    <div class="setting-item">
+                        <button id="connect-mcp" class="primary-button">Connect</button>
+                        <button id="disconnect-mcp" class="secondary-button">Disconnect</button>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Advanced</h3>
+                    <div class="setting-item">
+                        <label for="debug-mode">Debug Mode</label>
+                        <input type="checkbox" id="debug-mode">
+                    </div>
+                    <div class="setting-item">
+                        <label for="mcp-log-level">MCP Log Level</label>
+                        <select id="mcp-log-level">
+                            <option value="error">Error</option>
+                            <option value="warn">Warning</option>
+                            <option value="info" selected>Info</option>
+                            <option value="debug">Debug</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <button id="clear-storage" class="secondary-button">Clear Saved Settings</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -178,8 +208,8 @@
             <div class="panel-content">
                 <div class="help-section">
                     <h3>About ORGANIX</h3>
-                    <p>ORGANIX is a neural interface that connects AI agents to an immersive 3D visualization environment.</p>
-                    <p>It allows for bidirectional communication between you, the AI, and the visual representation of AI concepts.</p>
+                    <p>ORGANIX is a neural interface that connects Claude AI to an immersive 3D visualization environment.</p>
+                    <p>It allows for bidirectional communication between you, Claude, and the visual representation of AI concepts.</p>
                 </div>
                 
                 <div class="help-section">
@@ -197,6 +227,17 @@
                     <p>You can chat with Claude using the message panel on the right.</p>
                     <p>Claude can interact with the 3D environment based on your conversation.</p>
                     <p>Try asking Claude about different parts of the neural network or to explain concepts.</p>
+                </div>
+                
+                <div class="help-section">
+                    <h3>MCP Integration</h3>
+                    <p>The Model Context Protocol (MCP) allows Claude to interact with the visualization.</p>
+                    <p>Two modes are available:</p>
+                    <ul>
+                        <li><strong>Simulation Mode</strong>: Demonstrates capabilities without real Claude connection</li>
+                        <li><strong>Real Connection</strong>: Connects to Claude via WebSocket for true bidirectional interaction</li>
+                    </ul>
+                    <p>To use Real Connection mode, you need a valid MCP endpoint and API key.</p>
                 </div>
             </div>
         </div>
