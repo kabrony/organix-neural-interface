@@ -1,11 +1,9 @@
 /**
- * ORGANIX Neural Interface - UI Controller
+ * ORGANIX Neural Interface - Enhanced UI Controller
  * 
- * Manages the user interface of the ORGANIX application, handling
- * user interactions, displaying information, and coordinating between
- * the 3D visualization and the Claude MCP integration.
- * 
- * Enhanced with modern UI features and cyberpunk aesthetic.
+ * Manages the user interface with an enhanced cyberpunk aesthetic,
+ * handling user interactions, displaying information, and coordinating
+ * between the 3D visualization and the Claude MCP integration.
  */
 
 export class UIController {
@@ -26,13 +24,23 @@ export class UIController {
         // UI elements
         this.elements = {};
         
-        // Chat history
-        this.chatHistory = [];
+        // Message history
+        this.messageHistory = [];
+        
+        // Cyberpunk theme colors
+        this.cyberpunkColors = {
+            neonGreen: '#00ff8e',
+            acidGreen: '#39ff14',
+            neonOrange: '#ff8a00',
+            lightBlue: '#3ad6ff',
+            electricBlue: '#0cffe1',
+            warningRed: '#ff3c3c'
+        };
         
         // Initialize the UI
         this.initialize();
         
-        console.log('UI Controller initialized');
+        console.log('Enhanced UI Controller initialized with cyberpunk theme');
     }
     
     /**
@@ -51,8 +59,11 @@ export class UIController {
         // Load saved settings
         this.loadSavedSettings();
         
-        // Initialize message typing animation handler
-        this.initTypingHandler();
+        // Initialize typing animation
+        this.initializeTypingAnimation();
+        
+        // Add cyberpunk visual effects to UI
+        this.applyCyberpunkEffects();
         
         // Initial UI update
         this.updateUI();
@@ -72,8 +83,8 @@ export class UIController {
         // Input elements
         this.elements.userInput = document.getElementById('user-input');
         this.elements.sendButton = document.getElementById('send-btn');
-        this.elements.clearChat = document.getElementById('clear-chat');
         this.elements.messagesContainer = document.getElementById('messages-container');
+        this.elements.clearChat = document.getElementById('clear-chat');
         
         // Controls
         this.elements.ambientIntensity = document.getElementById('ambient-intensity');
@@ -117,6 +128,11 @@ export class UIController {
         this.elements.settingsClose = document.getElementById('settings-close');
         this.elements.helpClose = document.getElementById('help-close');
         this.elements.contextClose = document.getElementById('context-close');
+        
+        // Loading screen
+        this.elements.loadingScreen = document.getElementById('loading-screen');
+        this.elements.progressFill = document.querySelector('.progress-fill');
+        this.elements.progressText = document.querySelector('.progress-text');
     }
     
     /**
@@ -128,7 +144,7 @@ export class UIController {
         this.elements.userInput.addEventListener('keydown', this.handleInputKeyDown.bind(this));
         this.elements.clearChat.addEventListener('click', this.handleClearChat.bind(this));
         
-        // Auto-resize textarea when typing
+        // Make textarea auto-resize
         this.elements.userInput.addEventListener('input', this.autoResizeTextarea.bind(this));
         
         // Panel toggles
@@ -178,7 +194,7 @@ export class UIController {
         document.getElementById('query-object').addEventListener('click', this.handleQuerySelectedObject.bind(this));
         
         // Window resize
-        window.addEventListener('resize', this.handleWindowResize.bind(this));
+        window.addEventListener('resize', this.handleResize.bind(this));
     }
     
     /**
@@ -195,40 +211,88 @@ export class UIController {
         
         // Scene events
         this.eventBus.subscribe('scene:objectSelected', this.handleObjectSelected.bind(this));
+        this.eventBus.subscribe('scene:loadingProgress', this.updateLoadingProgress.bind(this));
+        this.eventBus.subscribe('scene:loadingComplete', this.hideLoadingScreen.bind(this));
         
         // UI events (mostly for notifications)
         this.eventBus.subscribe('ui:notification', this.showNotification.bind(this));
         this.eventBus.subscribe('ui:toggleConnectionPanel', () => this.togglePanel('settingsPanel'));
-        
-        // Effect events
-        this.eventBus.subscribe('effects:update', this.handleEffectsUpdate.bind(this));
     }
     
     /**
-     * Initialize typing animation handler
+     * Auto-resize the textarea based on content
      */
-    initTypingHandler() {
-        // Initialize typing state
-        this.typingState = {
-            active: false,
-            element: null,
-            text: '',
-            index: 0,
-            speed: { min: 10, max: 30 }
-        };
+    autoResizeTextarea() {
+        const textarea = this.elements.userInput;
+        
+        // Reset height to auto to get correct scrollHeight
+        textarea.style.height = 'auto';
+        
+        // Set to scrollHeight but cap between 60px and 200px
+        const newHeight = Math.min(Math.max(textarea.scrollHeight, 60), 200);
+        textarea.style.height = newHeight + 'px';
     }
     
     /**
-     * Handle window resize
+     * Initialize cyberpunk typing animation for messages
      */
-    handleWindowResize() {
-        // Adjust UI elements based on window size
-        this.updateScrollPosition();
+    initializeTypingAnimation() {
+        // Define CSS for the animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes cyberpunk-typing {
+                from { width: 0; }
+                to { width: 100%; }
+            }
+            
+            .typing-animation {
+                display: inline-block;
+                overflow: hidden;
+                border-right: 3px solid ${this.cyberpunkColors.electricBlue};
+                white-space: nowrap;
+                animation: 
+                    cyberpunk-typing 1.5s steps(40, end),
+                    cursor-blink 0.75s step-end infinite;
+            }
+            
+            @keyframes cursor-blink {
+                from, to { border-color: transparent; }
+                50% { border-color: ${this.cyberpunkColors.electricBlue}; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    /**
+     * Apply cyberpunk visual effects to UI elements
+     */
+    applyCyberpunkEffects() {
+        // Add glowing border effects
+        document.documentElement.style.setProperty('--neon-green', this.cyberpunkColors.neonGreen);
+        document.documentElement.style.setProperty('--acid-green', this.cyberpunkColors.acidGreen);
+        document.documentElement.style.setProperty('--neon-orange', this.cyberpunkColors.neonOrange);
+        document.documentElement.style.setProperty('--light-blue', this.cyberpunkColors.lightBlue);
+        document.documentElement.style.setProperty('--electric-blue', this.cyberpunkColors.electricBlue);
         
-        // Notify other components
-        this.eventBus.publish('ui:windowResized', {
-            width: window.innerWidth,
-            height: window.innerHeight
+        // Create data flow animation on loading screen
+        const loadingLogo = document.querySelector('.logo-large');
+        if (loadingLogo) {
+            loadingLogo.style.background = `linear-gradient(90deg, 
+                ${this.cyberpunkColors.neonGreen}, 
+                ${this.cyberpunkColors.electricBlue}, 
+                ${this.cyberpunkColors.neonOrange},
+                ${this.cyberpunkColors.acidGreen})`;
+            loadingLogo.style.webkitBackgroundClip = 'text';
+            loadingLogo.style.backgroundClip = 'text';
+            loadingLogo.style.color = 'transparent';
+            loadingLogo.style.backgroundSize = '300% 100%';
+            loadingLogo.style.animation = 'data-flow 4s linear infinite';
+        }
+        
+        // Add pulse effect to buttons
+        const buttons = document.querySelectorAll('.primary-button');
+        buttons.forEach(button => {
+            button.style.animation = 'pulse-glow 2s infinite';
         });
     }
     
@@ -249,6 +313,25 @@ export class UIController {
             if (savedPostProcessing !== null) {
                 this.elements.postProcessing.checked = savedPostProcessing === 'true';
                 this.handlePostProcessingChange({ target: this.elements.postProcessing });
+            }
+            
+            // Load effect settings
+            const savedEffects = localStorage.getItem('organix-effects');
+            if (savedEffects) {
+                const effects = JSON.parse(savedEffects);
+                if (effects.glow !== undefined) this.elements.enableGlow.checked = effects.glow;
+                if (effects.particles !== undefined) this.elements.enableParticles.checked = effects.particles;
+                if (effects.pulses !== undefined) this.elements.enablePulses.checked = effects.pulses;
+                if (effects.environment !== undefined) this.elements.enableEnvironment.checked = effects.environment;
+                if (effects.volumetric !== undefined && this.elements.enableVolumetric) {
+                    this.elements.enableVolumetric.checked = effects.volumetric;
+                }
+                if (effects.scanlines !== undefined && this.elements.enableScanlines) {
+                    this.elements.enableScanlines.checked = effects.scanlines;
+                }
+                
+                // Update visual effects based on loaded settings
+                this.updateEffectSettings();
             }
             
             // Load MCP mode
@@ -276,40 +359,10 @@ export class UIController {
                 this.elements.mcpLogLevel.value = savedMcpLogLevel;
             }
             
-            // Load chat history (limited to last 50 messages)
-            const savedChatHistory = localStorage.getItem('organix-chat-history');
-            if (savedChatHistory) {
-                try {
-                    this.chatHistory = JSON.parse(savedChatHistory).slice(-50);
-                    // Restore chat history to UI
-                    this.restoreChatHistory();
-                } catch (e) {
-                    console.error('Failed to parse chat history', e);
-                }
-            }
-            
             console.log('Loaded saved settings from localStorage');
         } catch (error) {
             console.error('Error loading saved settings:', error);
         }
-    }
-    
-    /**
-     * Restore chat history to UI
-     */
-    restoreChatHistory() {
-        // Clear existing messages first
-        while (this.elements.messagesContainer.firstChild) {
-            this.elements.messagesContainer.removeChild(this.elements.messagesContainer.firstChild);
-        }
-        
-        // Add each message from history
-        this.chatHistory.forEach(message => {
-            this.addMessageToUI(message.role, message.content, message.timestamp);
-        });
-        
-        // Scroll to bottom
-        this.scrollMessagesToBottom();
     }
     
     /**
@@ -327,6 +380,30 @@ export class UIController {
                 }
             }
         });
+        
+        // Update MCP mode UI
+        this.updateMcpModeUI(this.elements.mcpMode.value);
+    }
+    
+    /**
+     * Update effect settings
+     */
+    updateEffectSettings() {
+        // Collect settings from UI
+        const effectSettings = {
+            glow: this.elements.enableGlow.checked,
+            particles: this.elements.enableParticles.checked,
+            pulses: this.elements.enablePulses.checked,
+            environment: this.elements.enableEnvironment.checked,
+            volumetric: this.elements.enableVolumetric ? this.elements.enableVolumetric.checked : true,
+            scanlines: this.elements.enableScanlines ? this.elements.enableScanlines.checked : true
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('organix-effects', JSON.stringify(effectSettings));
+        
+        // Publish effect settings to the event bus
+        this.eventBus.publish('control:effectSettings', effectSettings);
     }
     
     /**
@@ -352,40 +429,6 @@ export class UIController {
     }
     
     /**
-     * Close all panels
-     */
-    closeAllPanels() {
-        this.panelStates.settingsPanel = false;
-        this.panelStates.helpPanel = false;
-        this.panelStates.contextPanel = false;
-        this.updateUI();
-    }
-    
-    /**
-     * Toggle help panel
-     */
-    toggleHelpPanel() {
-        this.togglePanel('helpPanel');
-    }
-    
-    /**
-     * Auto-resize textarea when typing
-     * @param {Event} event - Input event
-     */
-    autoResizeTextarea(event) {
-        const textarea = event.target;
-        
-        // Reset height to auto to get the real scrollHeight
-        textarea.style.height = 'auto';
-        
-        // Calculate required height (with limit)
-        const newHeight = Math.min(textarea.scrollHeight, 200);
-        
-        // Set the new height
-        textarea.style.height = `${newHeight}px`;
-    }
-    
-    /**
      * Handle send message button click
      */
     handleSendMessage() {
@@ -395,12 +438,16 @@ export class UIController {
             // Add message to UI
             this.addMessageToUI('user', message);
             
-            // Add to chat history
-            this.addToChatHistory('user', message);
+            // Add message to history
+            this.messageHistory.push({
+                role: 'user',
+                content: message,
+                timestamp: new Date().toISOString()
+            });
             
             // Clear input
             this.elements.userInput.value = '';
-            this.elements.userInput.style.height = 'auto';
+            this.autoResizeTextarea();
             
             // Publish send message event
             this.eventBus.publish('ui:sendMessage', message);
@@ -423,58 +470,21 @@ export class UIController {
      * Handle clear chat button click
      */
     handleClearChat() {
+        // Confirm before clearing
         if (confirm('Are you sure you want to clear the chat history?')) {
-            // Clear chat UI
-            while (this.elements.messagesContainer.childNodes.length > 0) {
-                this.elements.messagesContainer.removeChild(this.elements.messagesContainer.firstChild);
-            }
+            // Clear UI
+            this.elements.messagesContainer.innerHTML = '';
             
-            // Clear chat history array
-            this.chatHistory = [];
+            // Clear history
+            this.messageHistory = [];
             
-            // Clear from localStorage
-            localStorage.removeItem('organix-chat-history');
+            // Add system message
+            this.addMessageToUI('system', 'Chat history cleared');
             
-            // Display welcome message again
-            const welcomeMessage = {
-                role: 'assistant',
-                content: "Welcome to ORGANIX Neural Interface. I'm connected to this interactive visualization environment that represents my cognitive architecture. Feel free to ask me questions about the different neural components or interact with the 3D elements.",
-                timestamp: new Date().toISOString()
-            };
-            
-            this.addMessageToUI(welcomeMessage.role, welcomeMessage.content, welcomeMessage.timestamp);
-            this.addToChatHistory(welcomeMessage.role, welcomeMessage.content, welcomeMessage.timestamp);
-            
-            // Show notification
-            this.showNotification({
-                type: 'info',
-                message: 'Chat history cleared',
-                duration: 3000
-            });
-        }
-    }
-    
-    /**
-     * Add message to chat history
-     * @param {string} role - Message role ('user', 'assistant', or 'system')
-     * @param {string} content - Message content
-     * @param {string} [timestamp] - Optional timestamp
-     */
-    addToChatHistory(role, content, timestamp = new Date().toISOString()) {
-        // Add to chat history array
-        const message = { role, content, timestamp };
-        this.chatHistory.push(message);
-        
-        // Limit history size (keep last 100 messages)
-        if (this.chatHistory.length > 100) {
-            this.chatHistory.shift();
-        }
-        
-        // Save to localStorage
-        try {
-            localStorage.setItem('organix-chat-history', JSON.stringify(this.chatHistory));
-        } catch (error) {
-            console.error('Failed to save chat history:', error);
+            // Add welcome message
+            setTimeout(() => {
+                this.addMessageToUI('assistant', 'The chat history has been cleared. How can I assist you with the neural visualization?');
+            }, 500);
         }
     }
     
@@ -503,6 +513,14 @@ export class UIController {
     }
     
     /**
+     * Handle toggle of visual effects
+     */
+    handleEffectToggle(event) {
+        // Update effect settings
+        this.updateEffectSettings();
+    }
+    
+    /**
      * Handle reset view button click
      */
     handleResetView() {
@@ -514,48 +532,6 @@ export class UIController {
      */
     handleOverviewMode() {
         this.eventBus.publish('action:overviewMode');
-    }
-    
-    /**
-     * Handle effect toggle changes
-     * @param {Event} event - Change event
-     */
-    handleEffectToggle(event) {
-        const checkbox = event.target;
-        const effectType = checkbox.id.replace('enable-', '');
-        const enabled = checkbox.checked;
-        
-        this.eventBus.publish(`effects:toggle${effectType.charAt(0).toUpperCase() + effectType.slice(1)}`, enabled);
-    }
-    
-    /**
-     * Handle effects update from other components
-     * @param {Object} data - Effect state data
-     */
-    handleEffectsUpdate(data) {
-        if (data.glow !== undefined && this.elements.enableGlow) {
-            this.elements.enableGlow.checked = data.glow;
-        }
-        
-        if (data.particles !== undefined && this.elements.enableParticles) {
-            this.elements.enableParticles.checked = data.particles;
-        }
-        
-        if (data.pulses !== undefined && this.elements.enablePulses) {
-            this.elements.enablePulses.checked = data.pulses;
-        }
-        
-        if (data.environment !== undefined && this.elements.enableEnvironment) {
-            this.elements.enableEnvironment.checked = data.environment;
-        }
-        
-        if (data.volumetricLights !== undefined && this.elements.enableVolumetric) {
-            this.elements.enableVolumetric.checked = data.volumetricLights;
-        }
-        
-        if (data.scanlines !== undefined && this.elements.enableScanlines) {
-            this.elements.enableScanlines.checked = data.scanlines;
-        }
     }
     
     /**
@@ -753,8 +729,12 @@ export class UIController {
             // Add message to UI
             this.addMessageToUI('user', query);
             
-            // Add to chat history
-            this.addToChatHistory('user', query);
+            // Add to message history
+            this.messageHistory.push({
+                role: 'user',
+                content: query,
+                timestamp: new Date().toISOString()
+            });
             
             // Publish send message event
             this.eventBus.publish('ui:sendMessage', query);
@@ -804,12 +784,11 @@ export class UIController {
      * @param {object} message - Message data
      */
     handleMcpMessage(message) {
-        this.addMessageToUI(message.role, message.content, message.timestamp);
+        // Add message to history
+        this.messageHistory.push(message);
         
-        // Add to chat history for non-system messages
-        if (message.role !== 'system') {
-            this.addToChatHistory(message.role, message.content, message.timestamp);
-        }
+        // Add message to UI
+        this.addMessageToUI(message.role, message.content);
     }
     
     /**
@@ -862,192 +841,233 @@ export class UIController {
         
         // Show context panel
         this.togglePanel('contextPanel', true);
+        
+        // Position context panel near the object
+        // This would require projecting 3D coordinates to 2D screen coordinates
+        // For simplicity, we'll just show it at a fixed position for now
     }
     
     /**
-     * Format message content with Markdown-like processing
-     * @param {string} content - Message content
-     * @returns {string} Formatted HTML content
+     * Update loading progress
+     * @param {object} data - Progress data
      */
-    formatMessageContent(content) {
-        if (!content) return '';
+    updateLoadingProgress(data) {
+        const { progress, message } = data;
         
-        // Process code blocks
-        content = content.replace(/```([\s\S]*?)```/g, (match, code) => {
-            return `<pre><code>${this.escapeHtml(code.trim())}</code></pre>`;
-        });
+        if (this.elements.progressFill) {
+            this.elements.progressFill.style.width = `${progress * 100}%`;
+        }
         
-        // Process inline code
-        content = content.replace(/`([^`]+)`/g, (match, code) => {
-            return `<code>${this.escapeHtml(code)}</code>`;
-        });
-        
-        // Process paragraphs
-        const paragraphs = content.split('\n\n');
-        return paragraphs.map(p => {
-            // Skip already processed code blocks
-            if (p.startsWith('<pre>')) return p;
-            
-            // Process line breaks
-            const lines = p.split('\n').map(line => {
-                // Skip already processed inline code
-                if (line.includes('<code>')) return line;
-                return this.escapeHtml(line);
-            });
-            
-            return `<p>${lines.join('<br>')}</p>`;
-        }).join('');
+        if (this.elements.progressText && message) {
+            this.elements.progressText.textContent = message;
+        }
     }
     
     /**
-     * Escape HTML special characters
-     * @param {string} text - Text to escape
-     * @returns {string} Escaped text
+     * Hide loading screen
      */
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    hideLoadingScreen() {
+        if (this.elements.loadingScreen) {
+            this.elements.loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                this.elements.loadingScreen.style.display = 'none';
+            }, 500);
+        }
     }
     
     /**
-     * Add a message to the UI
+     * Handle window resize
+     */
+    handleResize() {
+        // Update panels and UI elements as needed
+        if (this.elements.messagesContainer) {
+            this.scrollMessagesToBottom();
+        }
+    }
+    
+    /**
+     * Add a message to the UI with enhanced styling
      * @param {string} role - Message role ('user', 'assistant', or 'system')
      * @param {string} content - Message content
-     * @param {string} [timestamp] - Optional timestamp (ISO string)
      */
-    addMessageToUI(role, content, timestamp = new Date().toISOString()) {
-        // Create container
+    addMessageToUI(role, content) {
+        // Create message container
         const messageContainer = document.createElement('div');
         messageContainer.className = `message-container ${role}-message-container`;
         
-        // Create header
+        // Create message header
         const messageHeader = document.createElement('div');
         messageHeader.className = 'message-header';
         
         // Create avatar
-        const messageAvatar = document.createElement('div');
-        messageAvatar.className = 'message-avatar';
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
         
         // Set avatar icon based on role
-        let iconName = 'user';
-        if (role === 'assistant') {
-            iconName = 'robot';
-        } else if (role === 'system') {
-            iconName = 'info';
+        let avatarIcon;
+        switch (role) {
+            case 'user':
+                avatarIcon = 'ph:user';
+                break;
+            case 'assistant':
+                avatarIcon = 'ph:robot';
+                break;
+            case 'system':
+                avatarIcon = 'ph:info';
+                break;
+            default:
+                avatarIcon = 'ph:chat';
         }
         
-        messageAvatar.innerHTML = `<iconify-icon icon="ph:${iconName}" width="16"></iconify-icon>`;
+        // Add icon to avatar
+        avatar.innerHTML = `<iconify-icon icon="${avatarIcon}" width="16"></iconify-icon>`;
         
-        // Create name
-        const messageName = document.createElement('span');
-        messageName.textContent = role === 'user' ? 'You' : role === 'assistant' ? 'Claude' : 'System';
+        // Add avatar and role name to header
+        messageHeader.appendChild(avatar);
         
-        // Create timestamp if provided
-        if (timestamp) {
-            const messageTime = document.createElement('span');
-            messageTime.className = 'message-timestamp';
-            
-            // Format timestamp
-            const date = new Date(timestamp);
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            
-            messageTime.textContent = `${hours}:${minutes}`;
-            messageHeader.appendChild(messageTime);
+        // Add sender name
+        const sender = document.createElement('span');
+        switch (role) {
+            case 'user':
+                sender.textContent = 'You';
+                break;
+            case 'assistant':
+                sender.textContent = 'Claude';
+                break;
+            case 'system':
+                sender.textContent = 'System';
+                break;
+            default:
+                sender.textContent = role;
+        }
+        messageHeader.appendChild(sender);
+        
+        // Add timestamp for non-system messages
+        if (role !== 'system') {
+            const timestamp = document.createElement('span');
+            timestamp.className = 'message-timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageHeader.appendChild(timestamp);
         }
         
-        // Assemble header based on role
+        // For user messages, append the avatar at the end
         if (role === 'user') {
-            messageHeader.appendChild(messageName);
-            messageHeader.appendChild(messageAvatar);
-        } else {
-            messageHeader.appendChild(messageAvatar);
-            messageHeader.appendChild(messageName);
+            messageHeader.appendChild(avatar);
+            messageHeader.insertBefore(sender, messageHeader.firstChild);
         }
         
         // Create message element
         const messageElement = document.createElement('div');
         messageElement.className = `message ${role}-message`;
         
-        // Format and set content
-        if (role === 'system') {
-            messageElement.textContent = content;
-        } else {
-            // For typing animation in assistant messages
-            if (role === 'assistant') {
-                messageElement.innerHTML = '';
-                
-                // Start typing animation after a tiny delay
-                setTimeout(() => {
-                    this.animateTyping(messageElement, content);
-                }, 100);
-            } else {
-                const formattedContent = this.formatMessageContent(content);
-                messageElement.innerHTML = formattedContent;
-            }
-        }
+        // Format content (handle markdown, code blocks, etc.)
+        const formattedContent = this.formatMessageContent(content);
+        messageElement.innerHTML = formattedContent;
         
-        // Add message actions if not system message
+        // Add components to message container
+        messageContainer.appendChild(messageHeader);
+        messageContainer.appendChild(messageElement);
+        
+        // Add message actions for non-system messages
         if (role !== 'system') {
             const messageActions = document.createElement('div');
             messageActions.className = 'message-actions';
             
-            // Copy button
-            const copyButton = document.createElement('button');
-            copyButton.className = 'action-button';
-            copyButton.innerHTML = '<iconify-icon icon="ph:copy" width="14"></iconify-icon> Copy';
-            copyButton.addEventListener('click', () => {
-                navigator.clipboard.writeText(content)
-                    .then(() => {
-                        // Temporarily change button text
-                        const originalText = copyButton.innerHTML;
-                        copyButton.innerHTML = '<iconify-icon icon="ph:check" width="14"></iconify-icon> Copied!';
-                        
-                        setTimeout(() => {
-                            copyButton.innerHTML = originalText;
-                        }, 2000);
-                    })
-                    .catch(err => {
-                        console.error('Failed to copy message: ', err);
-                    });
-            });
+            // Only add copy button for now
+            if (role === 'assistant') {
+                const copyButton = document.createElement('button');
+                copyButton.className = 'action-button';
+                copyButton.innerHTML = '<iconify-icon icon="ph:copy" width="14"></iconify-icon> Copy';
+                copyButton.addEventListener('click', () => this.copyMessageToClipboard(content));
+                messageActions.appendChild(copyButton);
+            }
             
-            messageActions.appendChild(copyButton);
             messageContainer.appendChild(messageActions);
         }
-        
-        // Assemble message
-        messageContainer.appendChild(messageHeader);
-        messageContainer.appendChild(messageElement);
         
         // Add to messages container
         this.elements.messagesContainer.appendChild(messageContainer);
         
+        // Apply typing animation for assistant messages (optional)
+        if (role === 'assistant' && content.length < 500) {
+            const textElement = messageElement.querySelector('p') || messageElement;
+            if (textElement && !textElement.classList.contains('typing-animation')) {
+                const originalContent = textElement.innerHTML;
+                textElement.innerHTML = '';
+                textElement.classList.add('typing-animation');
+                
+                // Reset after animation completes
+                setTimeout(() => {
+                    textElement.innerHTML = originalContent;
+                    textElement.classList.remove('typing-animation');
+                }, 1500);
+            }
+        }
+        
         // Scroll to bottom
         this.scrollMessagesToBottom();
-        
-        return messageElement;
     }
     
     /**
-     * Animate typing effect for messages
-     * @param {HTMLElement} element - Target element
-     * @param {string} text - Text to animate
+     * Format message content with markdown-like features
+     * @param {string} content - Raw message content
+     * @returns {string} Formatted HTML content
      */
-    animateTyping(element, text) {
-        // If we need to handle Markdown, pre-format the content
-        const formattedContent = this.formatMessageContent(text);
+    formatMessageContent(content) {
+        // Simple converter for basic markdown-like syntax
+        let formatted = content
+            // Handle paragraphs
+            .split('\n\n').map(para => `<p>${para}</p>`).join('')
+            // Handle code blocks
+            .replace(/```([a-z]*)\n([\s\S]*?)\n```/g, (_, lang, code) => {
+                return `<pre><code class="language-${lang}">${this.escapeHTML(code.trim())}</code></pre>`;
+            })
+            // Handle inline code
+            .replace(/`([^`]+)`/g, (_, code) => {
+                return `<code>${this.escapeHTML(code)}</code>`;
+            });
         
-        // For HTML content, we need to extract the plain text
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = formattedContent;
+        // If no paragraphs were created (no double newlines), wrap in a single paragraph
+        if (!formatted.includes('<p>')) {
+            formatted = `<p>${formatted}</p>`;
+        }
         
-        // Set the formatted HTML directly
-        element.innerHTML = formattedContent;
-        
-        // Scroll to keep up with typing
-        this.scrollMessagesToBottom();
+        return formatted;
+    }
+    
+    /**
+     * Escape HTML special characters
+     * @param {string} html - Raw HTML
+     * @returns {string} Escaped HTML
+     */
+    escapeHTML(html) {
+        return html
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+    
+    /**
+     * Copy message content to clipboard
+     * @param {string} content - Message content to copy
+     */
+    copyMessageToClipboard(content) {
+        navigator.clipboard.writeText(content).then(() => {
+            this.showNotification({
+                type: 'success',
+                message: 'Copied to clipboard',
+                duration: 2000
+            });
+        }).catch(err => {
+            console.error('Failed to copy text:', err);
+            this.showNotification({
+                type: 'error',
+                message: 'Failed to copy to clipboard',
+                duration: 3000
+            });
+        });
     }
     
     /**
@@ -1057,34 +1077,31 @@ export class UIController {
         // Remove existing typing indicator
         this.hideTypingIndicator();
         
-        // Create container
+        // Create typing indicator container
         const messageContainer = document.createElement('div');
         messageContainer.className = 'message-container assistant-message-container';
         messageContainer.id = 'typing-indicator-container';
         
-        // Create header
+        // Create message header
         const messageHeader = document.createElement('div');
         messageHeader.className = 'message-header';
         
         // Create avatar
-        const messageAvatar = document.createElement('div');
-        messageAvatar.className = 'message-avatar';
-        messageAvatar.innerHTML = '<iconify-icon icon="ph:robot" width="16"></iconify-icon>';
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.innerHTML = '<iconify-icon icon="ph:robot" width="16"></iconify-icon>';
         
-        // Create name
-        const messageName = document.createElement('span');
-        messageName.textContent = 'Claude';
-        
-        // Assemble header
-        messageHeader.appendChild(messageAvatar);
-        messageHeader.appendChild(messageName);
+        // Add avatar and role name to header
+        messageHeader.appendChild(avatar);
+        messageHeader.appendChild(document.createTextNode('Claude'));
         
         // Create typing indicator
         const typingIndicator = document.createElement('div');
+        typingIndicator.id = 'typing-indicator';
         typingIndicator.className = 'message assistant-message typing-indicator';
-        typingIndicator.textContent = 'Claude is thinking...';
+        typingIndicator.textContent = 'Claude is thinking';
         
-        // Create typing dots
+        // Add typing dots
         const typingDots = document.createElement('div');
         typingDots.className = 'typing-dots';
         
@@ -1096,7 +1113,7 @@ export class UIController {
         
         typingIndicator.appendChild(typingDots);
         
-        // Assemble typing indicator
+        // Add components to message container
         messageContainer.appendChild(messageHeader);
         messageContainer.appendChild(typingIndicator);
         
@@ -1127,19 +1144,6 @@ export class UIController {
     }
     
     /**
-     * Update scroll position for automatic following
-     */
-    updateScrollPosition() {
-        // Only scroll if already near bottom (within 100px)
-        const { scrollTop, scrollHeight, clientHeight } = this.elements.messagesContainer;
-        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-        
-        if (distanceFromBottom < 100) {
-            this.scrollMessagesToBottom();
-        }
-    }
-    
-    /**
      * Show a notification
      * @param {object} options - Notification options
      * @param {string} options.type - Notification type ('info', 'success', 'warning', 'error')
@@ -1153,14 +1157,25 @@ export class UIController {
         const notificationElement = document.createElement('div');
         notificationElement.className = `notification ${type}`;
         
-        // Add appropriate icon based on type
-        let iconName = 'info';
-        if (type === 'success') iconName = 'check-circle';
-        if (type === 'warning') iconName = 'warning';
-        if (type === 'error') iconName = 'x-circle';
+        // Add icon based on type
+        let iconName;
+        switch (type) {
+            case 'success':
+                iconName = 'ph:check-circle';
+                break;
+            case 'warning':
+                iconName = 'ph:warning';
+                break;
+            case 'error':
+                iconName = 'ph:x-circle';
+                break;
+            case 'info':
+            default:
+                iconName = 'ph:info';
+        }
         
         notificationElement.innerHTML = `
-            <iconify-icon icon="ph:${iconName}" width="18"></iconify-icon>
+            <iconify-icon icon="${iconName}" width="16"></iconify-icon>
             <span>${message}</span>
         `;
         
