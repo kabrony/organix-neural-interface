@@ -5,14 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ORGANIX Neural Interface</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/analytics.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
+    <!-- vis.js for network visualization -->
+    <script src="https://unpkg.com/vis-network@9.1.0/dist/vis-network.min.js"></script>
 </head>
 <body>
     <div id="app-container">
         <!-- 3D Visualization Area -->
         <div id="visualization-container"></div>
+        
+        <!-- Analytics Dashboard (initially hidden) -->
+        <div id="analytics-container" class="hidden"></div>
         
         <!-- UI Overlay -->
         <div id="ui-overlay">
@@ -32,6 +40,7 @@
                     </div>
                 </div>
                 <nav class="main-nav">
+                    <button id="analytics-toggle" class="nav-button"><span class="icon">📊</span></button>
                     <button id="settings-toggle" class="nav-button"><span class="icon">⚙️</span></button>
                     <button id="help-toggle" class="nav-button"><span class="icon">❓</span></button>
                 </nav>
@@ -84,6 +93,30 @@
                         <div class="control-slider">
                             <label for="connection-visibility">Connection Visibility</label>
                             <input type="range" id="connection-visibility" min="0" max="100" value="80">
+                        </div>
+                    </div>
+                    
+                    <div class="control-section">
+                        <h3>Effects</h3>
+                        <div class="control-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-glow" checked>
+                                Neuron Glow
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-particles" checked>
+                                Particles
+                            </label>
+                        </div>
+                        <div class="control-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-pulses" checked>
+                                Connection Pulses
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-environment" checked>
+                                Environment
+                            </label>
                         </div>
                     </div>
                     
@@ -179,6 +212,23 @@
                 </div>
                 
                 <div class="settings-section">
+                    <h3>Analytics</h3>
+                    <div class="setting-item">
+                        <label for="analytics-refresh-rate">Refresh Rate (ms)</label>
+                        <select id="analytics-refresh-rate">
+                            <option value="500">500</option>
+                            <option value="1000" selected>1000</option>
+                            <option value="2000">2000</option>
+                            <option value="5000">5000</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="enable-analytics-autorefresh">Auto-Refresh</label>
+                        <input type="checkbox" id="enable-analytics-autorefresh" checked>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
                     <h3>Advanced</h3>
                     <div class="setting-item">
                         <label for="debug-mode">Debug Mode</label>
@@ -227,6 +277,17 @@
                     <p>You can chat with Claude using the message panel on the right.</p>
                     <p>Claude can interact with the 3D environment based on your conversation.</p>
                     <p>Try asking Claude about different parts of the neural network or to explain concepts.</p>
+                </div>
+                
+                <div class="help-section">
+                    <h3>Advanced Visualization</h3>
+                    <p>ORGANIX includes advanced visualization effects to help you understand neural activities:</p>
+                    <ul>
+                        <li><strong>Neuron Glow</strong>: Highlights active neurons with bloom effects</li>
+                        <li><strong>Particles</strong>: Ambient particles that flow through the neural space</li>
+                        <li><strong>Connection Pulses</strong>: Visualizes information flow between neurons</li>
+                        <li><strong>Analytics Dashboard</strong>: Provides real-time metrics and visualizations</li>
+                    </ul>
                 </div>
                 
                 <div class="help-section">
