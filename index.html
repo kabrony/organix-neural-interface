@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORGANIX Neural Interface</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app-container">
+        <!-- 3D Visualization Area -->
+        <div id="visualization-container"></div>
+        
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <!-- Top Navigation -->
+            <header id="top-nav">
+                <div class="logo">
+                    <span class="logo-text">ORGANIX</span>
+                    <span class="version">v1.0</span>
+                </div>
+                <div class="status-indicators">
+                    <div id="mcp-status" class="status-indicator" data-status="disconnected">
+                        <span class="status-icon"></span>
+                        <span class="status-text">MCP: Disconnected</span>
+                    </div>
+                    <div id="performance-stats">
+                        <span id="fps-counter">FPS: --</span>
+                    </div>
+                </div>
+                <nav class="main-nav">
+                    <button id="settings-toggle" class="nav-button"><span class="icon">⚙️</span></button>
+                    <button id="help-toggle" class="nav-button"><span class="icon">❓</span></button>
+                </nav>
+            </header>
+            
+            <!-- Claude Interaction Panel -->
+            <div id="claude-panel" class="side-panel">
+                <div class="panel-header">
+                    <h2>Claude Interface</h2>
+                    <button id="claude-panel-toggle" class="panel-toggle"></button>
+                </div>
+                <div class="panel-content">
+                    <div id="messages-container">
+                        <!-- Messages will be inserted here -->
+                    </div>
+                    <div id="input-area">
+                        <textarea id="user-input" placeholder="Message Claude..."></textarea>
+                        <div class="input-controls">
+                            <button id="send-btn" class="primary-button">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Control Panel -->
+            <div id="control-panel" class="side-panel">
+                <div class="panel-header">
+                    <h2>Controls</h2>
+                    <button id="control-panel-toggle" class="panel-toggle"></button>
+                </div>
+                <div class="panel-content">
+                    <div class="control-section">
+                        <h3>Environment</h3>
+                        <div class="control-group">
+                            <button id="reset-view" class="control-button">Reset View</button>
+                            <button id="overview-mode" class="control-button">Overview</button>
+                        </div>
+                        <div class="control-slider">
+                            <label for="ambient-intensity">Ambient Intensity</label>
+                            <input type="range" id="ambient-intensity" min="0" max="100" value="50">
+                        </div>
+                    </div>
+                    
+                    <div class="control-section">
+                        <h3>Neural Activity</h3>
+                        <div class="control-slider">
+                            <label for="activity-level">Activity Level</label>
+                            <input type="range" id="activity-level" min="0" max="100" value="70">
+                        </div>
+                        <div class="control-slider">
+                            <label for="connection-visibility">Connection Visibility</label>
+                            <input type="range" id="connection-visibility" min="0" max="100" value="80">
+                        </div>
+                    </div>
+                    
+                    <div class="control-section">
+                        <h3>Visualization</h3>
+                        <div class="visual-preset-buttons">
+                            <button class="preset-button active" data-preset="default">Default</button>
+                            <button class="preset-button" data-preset="neural">Neural</button>
+                            <button class="preset-button" data-preset="abstract">Abstract</button>
+                            <button class="preset-button" data-preset="data">Data Flow</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Context Info Panel (appears when objects are selected) -->
+            <div id="context-panel" class="floating-panel hidden">
+                <div class="panel-header">
+                    <h3 id="context-title">Selected Object</h3>
+                    <button id="context-close" class="close-button">×</button>
+                </div>
+                <div class="panel-content">
+                    <div id="context-details">
+                        <!-- Details will be inserted here -->
+                    </div>
+                    <button id="query-object" class="secondary-button">Ask Claude About This</button>
+                </div>
+            </div>
+            
+            <!-- Notification Area -->
+            <div id="notification-area">
+                <!-- Notifications will appear here -->
+            </div>
+        </div>
+        
+        <!-- Hidden Panels -->
+        <div id="settings-panel" class="modal-panel hidden">
+            <div class="panel-header">
+                <h2>Settings</h2>
+                <button id="settings-close" class="close-button">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="settings-section">
+                    <h3>Display</h3>
+                    <div class="setting-item">
+                        <label for="quality-preset">Rendering Quality</label>
+                        <select id="quality-preset">
+                            <option value="performance">Performance</option>
+                            <option value="balanced" selected>Balanced</option>
+                            <option value="quality">Quality</option>
+                            <option value="ultra">Ultra</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="post-processing">Post Processing</label>
+                        <input type="checkbox" id="post-processing" checked>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Interaction</h3>
+                    <div class="setting-item">
+                        <label for="camera-inertia">Camera Inertia</label>
+                        <input type="range" id="camera-inertia" min="0" max="100" value="70">
+                    </div>
+                    <div class="setting-item">
+                        <label for="auto-rotate">Auto Rotate</label>
+                        <input type="checkbox" id="auto-rotate">
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>MCP Integration</h3>
+                    <div class="setting-item">
+                        <label for="mcp-endpoint">Endpoint URL</label>
+                        <input type="text" id="mcp-endpoint" value="http://localhost:8080/mcp">
+                    </div>
+                    <div class="setting-item">
+                        <label for="api-key">API Key</label>
+                        <input type="password" id="api-key" placeholder="Enter your API key">
+                    </div>
+                    <button id="connect-mcp" class="primary-button">Connect</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="help-panel" class="modal-panel hidden">
+            <div class="panel-header">
+                <h2>Help & Information</h2>
+                <button id="help-close" class="close-button">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="help-section">
+                    <h3>About ORGANIX</h3>
+                    <p>ORGANIX is a neural interface that connects AI agents to an immersive 3D visualization environment.</p>
+                    <p>It allows for bidirectional communication between you, the AI, and the visual representation of AI concepts.</p>
+                </div>
+                
+                <div class="help-section">
+                    <h3>Navigation Controls</h3>
+                    <ul>
+                        <li><strong>Left-click + drag</strong>: Rotate the view</li>
+                        <li><strong>Right-click + drag</strong>: Pan the view</li>
+                        <li><strong>Scroll</strong>: Zoom in/out</li>
+                        <li><strong>Double-click</strong> on an object: Focus on it</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h3>Interacting with Claude</h3>
+                    <p>You can chat with Claude using the message panel on the right.</p>
+                    <p>Claude can interact with the 3D environment based on your conversation.</p>
+                    <p>Try asking Claude about different parts of the neural network or to explain concepts.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="logo-large">ORGANIX</div>
+            <div class="loading-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <div class="progress-text">Initializing neural interface...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import maps for ES modules -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.162.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.162.0/examples/jsm/",
+            "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.12.1/+esm"
+        }
+    }
+    </script>
+    
+    <!-- Application scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
