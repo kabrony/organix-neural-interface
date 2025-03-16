@@ -15,6 +15,21 @@ ORGANIX Neural Interface is a cutting-edge web application that creates an inter
 - **Adaptive Environment**: Environment responds to both user and AI inputs
 - **High-fidelity Graphics**: WebGL-powered visuals with post-processing effects
 
+### 🎨 New Visual Effects
+
+- **Neural Glow**: Neurons emit dynamic glow based on activity levels
+- **Ambient Particles**: Floating particles create a sense of depth and movement
+- **Connection Pulses**: Visualize information flow with animated pulses along connections
+- **Dynamic Environment**: Immersive neural space background with subtle motion
+
+### 📊 Advanced Analytics Dashboard
+
+- **Activity Metrics**: Real-time monitoring of neural activity and system performance
+- **Network Topology**: Interactive graph visualization of neural connections
+- **Activation Heatmaps**: Visualize neuron activation patterns with color-coded matrices
+- **Performance Tracking**: Track response time, accuracy, and resource usage over time
+- **Customizable Views**: Multiple visualization methods with customizable parameters
+
 ### 🤝 Bidirectional Claude Integration
 
 - **Seamless MCP Communication**: Direct connection to Claude via Model Context Protocol
@@ -72,6 +87,18 @@ ORGANIX
 │   ├── Message handling and command processing
 │   └── Context persistence
 │
+├── Visual Effects (effects/neuralEffects.js)
+│   ├── Glow effects and post-processing
+│   ├── Particle systems
+│   ├── Connection pulses
+│   └── Environment effects
+│
+├── Analytics Dashboard (analytics/neuralAnalytics.js)
+│   ├── Real-time metrics and charts
+│   ├── Network topology visualization
+│   ├── Performance monitoring
+│   └── Activity heatmaps
+│
 ├── UI Controller (uiController.js)
 │   ├── User interface management
 │   ├── Panel toggling and positioning
@@ -91,6 +118,8 @@ ORGANIX
 - **Modern JavaScript**: ES6+ modules and features
 - **WebGL**: Hardware-accelerated graphics
 - **GLSL Shaders**: Custom visual effects
+- **Chart.js**: Data visualization for analytics
+- **vis.js**: Network graph visualization
 
 ## Getting Started
 
@@ -156,6 +185,23 @@ The MCP status indicator in the top bar will show when you're successfully conne
 - **Control Panel**: Adjust visualization parameters
 - **Context Panel**: Shows details about selected objects
 - **Settings Panel**: Configure application settings
+- **Analytics Panel**: View detailed metrics and visualizations
+
+### Using the Analytics Dashboard
+
+1. Click the 📊 icon in the top navigation bar to open the analytics dashboard
+2. Navigate between different visualization tabs to explore different aspects of the neural network
+3. Customize refresh rates and visualization parameters in the Settings panel
+4. Use keyboard shortcut Shift+A to quickly toggle the analytics dashboard
+
+### Customizing Visual Effects
+
+In the Control Panel, you can toggle and adjust various visual effects:
+
+- **Neuron Glow**: Toggle the glow effect around active neurons
+- **Particles**: Enable/disable ambient particle effects
+- **Connection Pulses**: Visualize data flow between neurons
+- **Environment**: Toggle the neural space background effect
 
 ### Interacting with Claude
 
@@ -194,18 +240,26 @@ Claude can send various commands to the visualization:
 /
 ├── index.html           # Main HTML entry point
 ├── css/
-│   └── style.css        # Application styles
+│   ├── style.css        # Main application styles
+│   └── analytics.css    # Analytics dashboard styles
 ├── js/
 │   ├── main.js          # Application entry point
 │   ├── neuralScene.js   # 3D visualization engine
 │   ├── mcpConnector.js  # Simulation mode integration
 │   ├── organixMcpClient.js # Real Claude MCP integration
 │   ├── uiController.js  # UI management
+│   ├── effects/
+│   │   └── neuralEffects.js # Visual effects system
+│   ├── analytics/
+│   │   └── neuralAnalytics.js # Analytics dashboard
 │   └── utils/           # Utility classes
 │       ├── eventBus.js  # Event pub/sub system
 │       └── loadingManager.js  # Loading screen handler
 └── assets/
-    └── ...              # Images and other assets
+    └── textures/        # Textures for visualization
+        ├── particle.svg # Particle texture
+        ├── pulse.svg    # Connection pulse texture
+        └── environment.svg # Environment background
 ```
 
 ### Core Components
@@ -230,7 +284,17 @@ Claude can send various commands to the visualization:
    - WebSocket-based bidirectional data flow
    - Authentication and session management
 
-5. **UIController (uiController.js)**
+5. **NeuralEffects (effects/neuralEffects.js)**
+   - Advanced visual effects system
+   - Post-processing and glow effects
+   - Particle systems and dynamic animations
+
+6. **NeuralAnalytics (analytics/neuralAnalytics.js)**
+   - Analytics dashboard component
+   - Real-time data visualization
+   - Performance metrics and neural activity visualization
+
+7. **UIController (uiController.js)**
    - Manages DOM elements and user interface
    - Handles UI events and user input
    - Updates UI based on application state
@@ -244,6 +308,22 @@ To add new features:
 3. Add command handling in organixMcpClient.js and mcpConnector.js
 4. Update UI elements in uiController.js
 
+#### Adding New Visual Effects
+
+1. Extend the NeuralEffects class in neuralEffects.js
+2. Add settings for your effect in the constructor's settings object
+3. Create an initialization method for your effect
+4. Add update logic in the main update method
+5. Register UI controls in the main.js setupEffectsEventHandlers method
+
+#### Adding New Analytics Visualizations
+
+1. Extend the NeuralAnalytics class in neuralAnalytics.js
+2. Create a new section method (like createCustomSection())
+3. Initialize your visualization in a matching method
+4. Add update logic in the updateCharts method
+5. Ensure data is provided via the eventBus in main.js
+
 ## Contributing
 
 Contributions are welcome! Here's how you can contribute:
@@ -254,6 +334,14 @@ Contributions are welcome! Here's how you can contribute:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+### Code Style Guidelines
+
+- Use ES6+ features and modules
+- Follow the existing architecture pattern
+- Document all public methods and components
+- Add comments for complex operations
+- Use meaningful variable and function names
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -263,6 +351,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Three.js community for their excellent 3D library
 - Anthropic for Claude and the Model Context Protocol
 - WebGL and modern browsers for making advanced visualization possible
+- Chart.js and vis.js for data visualization capabilities
 
 ---
 
