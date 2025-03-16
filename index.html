@@ -6,6 +6,7 @@
     <title>ORGANIX Neural Interface</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/analytics.css">
+    <link rel="stylesheet" href="css/chat-interface.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -13,6 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.0.1/dist/chart.umd.min.js"></script>
     <!-- vis.js for network visualization -->
     <script src="https://unpkg.com/vis-network@9.1.0/dist/vis-network.min.js"></script>
+    <!-- Iconify for enhanced interface icons -->
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
 </head>
 <body>
     <div id="app-container">
@@ -28,7 +31,7 @@
             <header id="top-nav">
                 <div class="logo">
                     <span class="logo-text">ORGANIX</span>
-                    <span class="version">v1.0</span>
+                    <span class="version">v1.2</span>
                 </div>
                 <div class="status-indicators">
                     <div id="mcp-status" class="status-indicator" data-status="disconnected">
@@ -40,26 +43,56 @@
                     </div>
                 </div>
                 <nav class="main-nav">
-                    <button id="analytics-toggle" class="nav-button"><span class="icon">📊</span></button>
-                    <button id="settings-toggle" class="nav-button"><span class="icon">⚙️</span></button>
-                    <button id="help-toggle" class="nav-button"><span class="icon">❓</span></button>
+                    <button id="analytics-toggle" class="nav-button" title="Analytics Dashboard">
+                        <iconify-icon icon="ph:chart-line-up" width="22"></iconify-icon>
+                    </button>
+                    <button id="settings-toggle" class="nav-button" title="Settings">
+                        <iconify-icon icon="ph:gear" width="22"></iconify-icon>
+                    </button>
+                    <button id="help-toggle" class="nav-button" title="Help">
+                        <iconify-icon icon="ph:question" width="22"></iconify-icon>
+                    </button>
                 </nav>
             </header>
             
             <!-- Claude Interaction Panel -->
             <div id="claude-panel" class="side-panel">
                 <div class="panel-header">
-                    <h2>Claude Interface</h2>
-                    <button id="claude-panel-toggle" class="panel-toggle"></button>
+                    <h2>
+                        <iconify-icon icon="ph:brain-circuit" inline></iconify-icon>
+                        Neural Interface
+                    </h2>
+                    <button id="claude-panel-toggle" class="panel-toggle">
+                        <iconify-icon icon="ph:x" width="18"></iconify-icon>
+                    </button>
                 </div>
                 <div class="panel-content">
                     <div id="messages-container">
                         <!-- Messages will be inserted here -->
+                        <div class="message-container assistant-message-container">
+                            <div class="message-header">
+                                <div class="message-avatar">
+                                    <iconify-icon icon="ph:robot" width="16"></iconify-icon>
+                                </div>
+                                <span>Claude</span>
+                            </div>
+                            <div class="message assistant-message">
+                                Welcome to ORGANIX Neural Interface. I'm connected to this interactive visualization environment that represents my cognitive architecture. Feel free to ask me questions about the different neural components or interact with the 3D elements.
+                            </div>
+                        </div>
                     </div>
                     <div id="input-area">
-                        <textarea id="user-input" placeholder="Message Claude..."></textarea>
+                        <textarea id="user-input" placeholder="Ask Claude about the neural network visualization..."></textarea>
                         <div class="input-controls">
-                            <button id="send-btn" class="primary-button">Send</button>
+                            <div class="input-options">
+                                <button id="clear-chat" class="action-button" title="Clear chat history">
+                                    <iconify-icon icon="ph:eraser" width="16"></iconify-icon>
+                                </button>
+                            </div>
+                            <button id="send-btn" class="primary-button">
+                                <iconify-icon icon="ph:paper-plane-right" inline></iconify-icon>
+                                Send
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -68,19 +101,30 @@
             <!-- Control Panel -->
             <div id="control-panel" class="side-panel">
                 <div class="panel-header">
-                    <h2>Controls</h2>
-                    <button id="control-panel-toggle" class="panel-toggle"></button>
+                    <h2>
+                        <iconify-icon icon="ph:sliders" inline></iconify-icon>
+                        Controls
+                    </h2>
+                    <button id="control-panel-toggle" class="panel-toggle">
+                        <iconify-icon icon="ph:x" width="18"></iconify-icon>
+                    </button>
                 </div>
                 <div class="panel-content">
                     <div class="control-section">
                         <h3>Environment</h3>
                         <div class="control-group">
-                            <button id="reset-view" class="control-button">Reset View</button>
-                            <button id="overview-mode" class="control-button">Overview</button>
+                            <button id="reset-view" class="control-button">
+                                <iconify-icon icon="ph:arrow-counter-clockwise" inline></iconify-icon>
+                                Reset View
+                            </button>
+                            <button id="overview-mode" class="control-button">
+                                <iconify-icon icon="ph:binoculars" inline></iconify-icon>
+                                Overview
+                            </button>
                         </div>
                         <div class="control-slider">
                             <label for="ambient-intensity">Ambient Intensity</label>
-                            <input type="range" id="ambient-intensity" min="0" max="100" value="50">
+                            <input type="range" id="ambient-intensity" min="0" max="100" value="70">
                         </div>
                     </div>
                     
@@ -88,11 +132,11 @@
                         <h3>Neural Activity</h3>
                         <div class="control-slider">
                             <label for="activity-level">Activity Level</label>
-                            <input type="range" id="activity-level" min="0" max="100" value="70">
+                            <input type="range" id="activity-level" min="0" max="100" value="80">
                         </div>
                         <div class="control-slider">
                             <label for="connection-visibility">Connection Visibility</label>
-                            <input type="range" id="connection-visibility" min="0" max="100" value="80">
+                            <input type="range" id="connection-visibility" min="0" max="100" value="90">
                         </div>
                     </div>
                     
@@ -111,22 +155,32 @@
                         <div class="control-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" id="enable-pulses" checked>
-                                Connection Pulses
+                                Data Flow
                             </label>
                             <label class="checkbox-label">
                                 <input type="checkbox" id="enable-environment" checked>
-                                Environment
+                                Grid Effect
+                            </label>
+                        </div>
+                        <div class="control-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-volumetric" checked>
+                                Volumetric Lights
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enable-scanlines" checked>
+                                Scanline Effect
                             </label>
                         </div>
                     </div>
                     
                     <div class="control-section">
-                        <h3>Visualization</h3>
+                        <h3>Visualization Theme</h3>
                         <div class="visual-preset-buttons">
-                            <button class="preset-button active" data-preset="default">Default</button>
-                            <button class="preset-button" data-preset="neural">Neural</button>
-                            <button class="preset-button" data-preset="abstract">Abstract</button>
-                            <button class="preset-button" data-preset="data">Data Flow</button>
+                            <button class="preset-button active" data-preset="default">Neural</button>
+                            <button class="preset-button" data-preset="neural">Cyberpunk</button>
+                            <button class="preset-button" data-preset="abstract">Digital</button>
+                            <button class="preset-button" data-preset="data">Dystopian</button>
                         </div>
                     </div>
                 </div>
@@ -136,13 +190,18 @@
             <div id="context-panel" class="floating-panel hidden">
                 <div class="panel-header">
                     <h3 id="context-title">Selected Object</h3>
-                    <button id="context-close" class="close-button">×</button>
+                    <button id="context-close" class="close-button">
+                        <iconify-icon icon="ph:x" width="20"></iconify-icon>
+                    </button>
                 </div>
                 <div class="panel-content">
                     <div id="context-details">
                         <!-- Details will be inserted here -->
                     </div>
-                    <button id="query-object" class="secondary-button">Ask Claude About This</button>
+                    <button id="query-object" class="secondary-button">
+                        <iconify-icon icon="ph:chat-dots" inline></iconify-icon>
+                        Ask Claude About This
+                    </button>
                 </div>
             </div>
             
@@ -155,8 +214,13 @@
         <!-- Hidden Panels -->
         <div id="settings-panel" class="modal-panel hidden">
             <div class="panel-header">
-                <h2>Settings</h2>
-                <button id="settings-close" class="close-button">×</button>
+                <h2>
+                    <iconify-icon icon="ph:gear" inline></iconify-icon>
+                    Settings
+                </h2>
+                <button id="settings-close" class="close-button">
+                    <iconify-icon icon="ph:x" width="20"></iconify-icon>
+                </button>
             </div>
             <div class="panel-content">
                 <div class="settings-section">
@@ -165,8 +229,8 @@
                         <label for="quality-preset">Rendering Quality</label>
                         <select id="quality-preset">
                             <option value="performance">Performance</option>
-                            <option value="balanced" selected>Balanced</option>
-                            <option value="quality">Quality</option>
+                            <option value="balanced">Balanced</option>
+                            <option value="quality" selected>Quality</option>
                             <option value="ultra">Ultra</option>
                         </select>
                     </div>
@@ -199,7 +263,7 @@
                     </div>
                     <div class="setting-item">
                         <label for="mcp-endpoint">Endpoint URL</label>
-                        <input type="text" id="mcp-endpoint" value="ws://localhost:8080/mcp">
+                        <input type="text" id="mcp-endpoint" value="wss://organix-mcp.dystolabs.dev/v1">
                     </div>
                     <div class="setting-item">
                         <label for="api-key">API Key</label>
@@ -252,14 +316,19 @@
         
         <div id="help-panel" class="modal-panel hidden">
             <div class="panel-header">
-                <h2>Help & Information</h2>
-                <button id="help-close" class="close-button">×</button>
+                <h2>
+                    <iconify-icon icon="ph:info" inline></iconify-icon>
+                    Help & Information
+                </h2>
+                <button id="help-close" class="close-button">
+                    <iconify-icon icon="ph:x" width="20"></iconify-icon>
+                </button>
             </div>
             <div class="panel-content">
                 <div class="help-section">
                     <h3>About ORGANIX</h3>
-                    <p>ORGANIX is a neural interface that connects Claude AI to an immersive 3D visualization environment.</p>
-                    <p>It allows for bidirectional communication between you, Claude, and the visual representation of AI concepts.</p>
+                    <p>ORGANIX is an advanced neural interface that creates a visual representation of AI cognition. It allows us to interact in a 3D environment that represents different aspects of Claude's cognitive processes.</p>
+                    <p>The visualization uses advanced Three.js techniques to create a stunning digital environment that responds to the conversation in real-time.</p>
                 </div>
                 
                 <div class="help-section">
@@ -284,9 +353,9 @@
                     <p>ORGANIX includes advanced visualization effects to help you understand neural activities:</p>
                     <ul>
                         <li><strong>Neuron Glow</strong>: Highlights active neurons with bloom effects</li>
-                        <li><strong>Particles</strong>: Ambient particles that flow through the neural space</li>
-                        <li><strong>Connection Pulses</strong>: Visualizes information flow between neurons</li>
-                        <li><strong>Analytics Dashboard</strong>: Provides real-time metrics and visualizations</li>
+                        <li><strong>Data Flow</strong>: Visualizes information flowing through neural pathways</li>
+                        <li><strong>Volumetric Lights</strong>: Creates dramatic lighting effects that interact with particles</li>
+                        <li><strong>Grid Effect</strong>: Displays a cyberpunk-inspired grid environment</li>
                     </ul>
                 </div>
                 
