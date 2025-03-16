@@ -10,6 +10,7 @@ import { MCPConnector } from './mcpConnector.js';
 import { UIController } from './uiController.js';
 import { EventBus } from './utils/eventBus.js';
 import { LoadingManager } from './utils/loadingManager.js';
+import OrganixMcpClient from './organixMcpClient.js';
 
 class OrganixApp {
     constructor() {
@@ -36,8 +37,14 @@ class OrganixApp {
             this.neuralScene = new NeuralScene('#visualization-container', this.eventBus);
             await this.neuralScene.initialize();
             
-            // Initialize MCP connector
-            this.loadingManager.updateProgress(40, 'Establishing MCP connection...');
+            // Initialize MCP components
+            this.loadingManager.updateProgress(30, 'Initializing MCP components...');
+            
+            // Initialize real MCP client for direct Claude integration
+            this.mcpClient = new OrganixMcpClient(this.eventBus);
+            await this.mcpClient.initialize();
+            
+            // Initialize the simulation MCP connector (fallback for demo purposes)
             this.mcpConnector = new MCPConnector(this.eventBus);
             
             // Initialize UI controller
@@ -70,6 +77,76 @@ class OrganixApp {
         
         // Handle keyboard shortcuts
         window.addEventListener('keydown', this.handleKeyDown.bind(this));
+        
+        // Setup MCP-specific event handlers
+        this.setupMcpEventHandlers();
+    }
+    
+    setupMcpEventHandlers() {
+        // Handle MCP communication mode changes
+        this.eventBus.subscribe('settings:mcpMode', this.handleMcpModeChange.bind(this));
+        
+        // Handle scene state updates to sync with Claude
+        this.eventBus.subscribe('scene:stateUpdate', this.handleSceneStateUpdate.bind(this));
+        
+        // Handle object interactions to notify Claude
+        this.eventBus.subscribe('scene:objectInteraction', this.handleObjectInteraction.bind(this));
+    }
+    
+    handleMcpModeChange(mode) {
+        console.log(`Switching MCP mode to: ${mode}`);
+        
+        // Valid modes are 'real' (actual Claude connection) or 'simulation' (demo mode)
+        switch (mode) {
+            case 'real':
+                // Disconnect simulated MCP if connected
+                if (this.mcpConnector.connected) {
+                    this.mcpConnector.disconnect();
+                }
+                
+                // Use the real MCP client for messaging
+                this.activeMcpHandler = this.mcpClient;
+                
+                // Show notification about real MCP mode
+                this.eventBus.publish('ui:notification', {
+                    type: 'info',
+                    message: 'Using real Claude MCP connection mode',
+                    duration: 3000
+                });
+                break;
+                
+            case 'simulation':
+            default:
+                // Disconnect real MCP if connected
+                if (this.mcpClient.isConnected) {
+                    this.mcpClient.disconnect();
+                }
+                
+                // Use the simulation MCP connector for messaging
+                this.activeMcpHandler = this.mcpConnector;
+                
+                // Show notification about simulation mode
+                this.eventBus.publish('ui:notification', {
+                    type: 'info',
+                    message: 'Using simulated Claude responses (demo mode)',
+                    duration: 3000
+                });
+                break;
+        }
+    }
+    
+    handleSceneStateUpdate(state) {
+        // Only forward to real MCP client when in real mode
+        if (this.activeMcpHandler === this.mcpClient && this.mcpClient.isConnected) {
+            this.mcpClient.updateSceneState(state);
+        }
+    }
+    
+    handleObjectInteraction(interactionData) {
+        // Only forward to real MCP client when in real mode
+        if (this.activeMcpHandler === this.mcpClient && this.mcpClient.isConnected) {
+            this.mcpClient.notifyObjectInteraction(interactionData);
+        }
     }
     
     handleResize() {
@@ -97,9 +174,19 @@ class OrganixApp {
             event.preventDefault();
             this.uiController.toggleHelpPanel();
         }
+        
+        // Shift+C to toggle MCP connection panel
+        if (event.key === 'C' && event.shiftKey) {
+            event.preventDefault();
+            this.eventBus.publish('ui:toggleConnectionPanel');
+        }
     }
     
     onAppReady() {
+        // Determine initial MCP mode based on previous setting
+        const savedMcpMode = localStorage.getItem('organix-mcp-mode') || 'simulation';
+        this.handleMcpModeChange(savedMcpMode);
+        
         // Show welcome message
         this.uiController.showNotification({
             type: 'info',
@@ -107,29 +194,33 @@ class OrganixApp {
             duration: 5000
         });
         
-        // Try to automatically connect to MCP
-        this.tryAutoConnect();
+        // Try to automatically connect to MCP if previously connected
+        if (savedMcpMode === 'real') {
+            this.tryAutoConnectToMcp();
+        }
         
         // Start the render loop
         this.neuralScene.startRenderLoop();
     }
     
-    async tryAutoConnect() {
+    async tryAutoConnectToMcp() {
         // Check for stored MCP connection settings
-        const mcpSettings = localStorage.getItem('organix-mcp-settings');
+        const mcpConfig = localStorage.getItem('organix-mcp-config');
         
-        if (mcpSettings) {
+        if (mcpConfig) {
             try {
-                const settings = JSON.parse(mcpSettings);
+                const config = JSON.parse(mcpConfig);
                 
-                if (settings.autoConnect && settings.endpoint) {
+                if (config.endpoint) {
                     this.uiController.showNotification({
                         type: 'info',
                         message: 'Attempting to connect to Claude via MCP...',
                         duration: 3000
                     });
                     
-                    await this.mcpConnector.connect(settings.endpoint, settings.apiKey);
+                    this.eventBus.publish('mcp:connect', {
+                        endpoint: config.endpoint
+                    });
                 }
             } catch (error) {
                 console.error('Failed to auto-connect to MCP:', error);
