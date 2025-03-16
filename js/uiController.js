@@ -4,6 +4,8 @@
  * Manages the user interface of the ORGANIX application, handling
  * user interactions, displaying information, and coordinating between
  * the 3D visualization and the Claude MCP integration.
+ * 
+ * Enhanced with modern UI features and cyberpunk aesthetic.
  */
 
 export class UIController {
@@ -23,6 +25,9 @@ export class UIController {
         
         // UI elements
         this.elements = {};
+        
+        // Chat history
+        this.chatHistory = [];
         
         // Initialize the UI
         this.initialize();
@@ -46,6 +51,9 @@ export class UIController {
         // Load saved settings
         this.loadSavedSettings();
         
+        // Initialize message typing animation handler
+        this.initTypingHandler();
+        
         // Initial UI update
         this.updateUI();
     }
@@ -64,6 +72,7 @@ export class UIController {
         // Input elements
         this.elements.userInput = document.getElementById('user-input');
         this.elements.sendButton = document.getElementById('send-btn');
+        this.elements.clearChat = document.getElementById('clear-chat');
         this.elements.messagesContainer = document.getElementById('messages-container');
         
         // Controls
@@ -73,6 +82,14 @@ export class UIController {
         this.elements.visualPresetButtons = document.querySelectorAll('.preset-button');
         this.elements.resetViewButton = document.getElementById('reset-view');
         this.elements.overviewModeButton = document.getElementById('overview-mode');
+        
+        // Effect toggles
+        this.elements.enableGlow = document.getElementById('enable-glow');
+        this.elements.enableParticles = document.getElementById('enable-particles');
+        this.elements.enablePulses = document.getElementById('enable-pulses');
+        this.elements.enableEnvironment = document.getElementById('enable-environment');
+        this.elements.enableVolumetric = document.getElementById('enable-volumetric');
+        this.elements.enableScanlines = document.getElementById('enable-scanlines');
         
         // Settings
         this.elements.qualityPreset = document.getElementById('quality-preset');
@@ -109,6 +126,10 @@ export class UIController {
         // Message input
         this.elements.sendButton.addEventListener('click', this.handleSendMessage.bind(this));
         this.elements.userInput.addEventListener('keydown', this.handleInputKeyDown.bind(this));
+        this.elements.clearChat.addEventListener('click', this.handleClearChat.bind(this));
+        
+        // Auto-resize textarea when typing
+        this.elements.userInput.addEventListener('input', this.autoResizeTextarea.bind(this));
         
         // Panel toggles
         this.elements.claudePanelToggle.addEventListener('click', () => this.togglePanel('claudePanel'));
@@ -123,6 +144,14 @@ export class UIController {
         this.elements.ambientIntensity.addEventListener('input', this.handleAmbientIntensityChange.bind(this));
         this.elements.activityLevel.addEventListener('input', this.handleActivityLevelChange.bind(this));
         this.elements.connectionVisibility.addEventListener('input', this.handleConnectionVisibilityChange.bind(this));
+        
+        // Effect toggles
+        this.elements.enableGlow.addEventListener('change', this.handleEffectToggle.bind(this));
+        this.elements.enableParticles.addEventListener('change', this.handleEffectToggle.bind(this));
+        this.elements.enablePulses.addEventListener('change', this.handleEffectToggle.bind(this));
+        this.elements.enableEnvironment.addEventListener('change', this.handleEffectToggle.bind(this));
+        this.elements.enableVolumetric.addEventListener('change', this.handleEffectToggle.bind(this));
+        this.elements.enableScanlines.addEventListener('change', this.handleEffectToggle.bind(this));
         
         // Control buttons
         this.elements.resetViewButton.addEventListener('click', this.handleResetView.bind(this));
@@ -147,6 +176,9 @@ export class UIController {
         
         // Context panel
         document.getElementById('query-object').addEventListener('click', this.handleQuerySelectedObject.bind(this));
+        
+        // Window resize
+        window.addEventListener('resize', this.handleWindowResize.bind(this));
     }
     
     /**
@@ -167,6 +199,37 @@ export class UIController {
         // UI events (mostly for notifications)
         this.eventBus.subscribe('ui:notification', this.showNotification.bind(this));
         this.eventBus.subscribe('ui:toggleConnectionPanel', () => this.togglePanel('settingsPanel'));
+        
+        // Effect events
+        this.eventBus.subscribe('effects:update', this.handleEffectsUpdate.bind(this));
+    }
+    
+    /**
+     * Initialize typing animation handler
+     */
+    initTypingHandler() {
+        // Initialize typing state
+        this.typingState = {
+            active: false,
+            element: null,
+            text: '',
+            index: 0,
+            speed: { min: 10, max: 30 }
+        };
+    }
+    
+    /**
+     * Handle window resize
+     */
+    handleWindowResize() {
+        // Adjust UI elements based on window size
+        this.updateScrollPosition();
+        
+        // Notify other components
+        this.eventBus.publish('ui:windowResized', {
+            width: window.innerWidth,
+            height: window.innerHeight
+        });
     }
     
     /**
@@ -213,10 +276,40 @@ export class UIController {
                 this.elements.mcpLogLevel.value = savedMcpLogLevel;
             }
             
+            // Load chat history (limited to last 50 messages)
+            const savedChatHistory = localStorage.getItem('organix-chat-history');
+            if (savedChatHistory) {
+                try {
+                    this.chatHistory = JSON.parse(savedChatHistory).slice(-50);
+                    // Restore chat history to UI
+                    this.restoreChatHistory();
+                } catch (e) {
+                    console.error('Failed to parse chat history', e);
+                }
+            }
+            
             console.log('Loaded saved settings from localStorage');
         } catch (error) {
             console.error('Error loading saved settings:', error);
         }
+    }
+    
+    /**
+     * Restore chat history to UI
+     */
+    restoreChatHistory() {
+        // Clear existing messages first
+        while (this.elements.messagesContainer.firstChild) {
+            this.elements.messagesContainer.removeChild(this.elements.messagesContainer.firstChild);
+        }
+        
+        // Add each message from history
+        this.chatHistory.forEach(message => {
+            this.addMessageToUI(message.role, message.content, message.timestamp);
+        });
+        
+        // Scroll to bottom
+        this.scrollMessagesToBottom();
     }
     
     /**
@@ -276,6 +369,23 @@ export class UIController {
     }
     
     /**
+     * Auto-resize textarea when typing
+     * @param {Event} event - Input event
+     */
+    autoResizeTextarea(event) {
+        const textarea = event.target;
+        
+        // Reset height to auto to get the real scrollHeight
+        textarea.style.height = 'auto';
+        
+        // Calculate required height (with limit)
+        const newHeight = Math.min(textarea.scrollHeight, 200);
+        
+        // Set the new height
+        textarea.style.height = `${newHeight}px`;
+    }
+    
+    /**
      * Handle send message button click
      */
     handleSendMessage() {
@@ -285,8 +395,12 @@ export class UIController {
             // Add message to UI
             this.addMessageToUI('user', message);
             
+            // Add to chat history
+            this.addToChatHistory('user', message);
+            
             // Clear input
             this.elements.userInput.value = '';
+            this.elements.userInput.style.height = 'auto';
             
             // Publish send message event
             this.eventBus.publish('ui:sendMessage', message);
@@ -302,6 +416,65 @@ export class UIController {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             this.handleSendMessage();
+        }
+    }
+    
+    /**
+     * Handle clear chat button click
+     */
+    handleClearChat() {
+        if (confirm('Are you sure you want to clear the chat history?')) {
+            // Clear chat UI
+            while (this.elements.messagesContainer.childNodes.length > 0) {
+                this.elements.messagesContainer.removeChild(this.elements.messagesContainer.firstChild);
+            }
+            
+            // Clear chat history array
+            this.chatHistory = [];
+            
+            // Clear from localStorage
+            localStorage.removeItem('organix-chat-history');
+            
+            // Display welcome message again
+            const welcomeMessage = {
+                role: 'assistant',
+                content: "Welcome to ORGANIX Neural Interface. I'm connected to this interactive visualization environment that represents my cognitive architecture. Feel free to ask me questions about the different neural components or interact with the 3D elements.",
+                timestamp: new Date().toISOString()
+            };
+            
+            this.addMessageToUI(welcomeMessage.role, welcomeMessage.content, welcomeMessage.timestamp);
+            this.addToChatHistory(welcomeMessage.role, welcomeMessage.content, welcomeMessage.timestamp);
+            
+            // Show notification
+            this.showNotification({
+                type: 'info',
+                message: 'Chat history cleared',
+                duration: 3000
+            });
+        }
+    }
+    
+    /**
+     * Add message to chat history
+     * @param {string} role - Message role ('user', 'assistant', or 'system')
+     * @param {string} content - Message content
+     * @param {string} [timestamp] - Optional timestamp
+     */
+    addToChatHistory(role, content, timestamp = new Date().toISOString()) {
+        // Add to chat history array
+        const message = { role, content, timestamp };
+        this.chatHistory.push(message);
+        
+        // Limit history size (keep last 100 messages)
+        if (this.chatHistory.length > 100) {
+            this.chatHistory.shift();
+        }
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem('organix-chat-history', JSON.stringify(this.chatHistory));
+        } catch (error) {
+            console.error('Failed to save chat history:', error);
         }
     }
     
@@ -341,6 +514,48 @@ export class UIController {
      */
     handleOverviewMode() {
         this.eventBus.publish('action:overviewMode');
+    }
+    
+    /**
+     * Handle effect toggle changes
+     * @param {Event} event - Change event
+     */
+    handleEffectToggle(event) {
+        const checkbox = event.target;
+        const effectType = checkbox.id.replace('enable-', '');
+        const enabled = checkbox.checked;
+        
+        this.eventBus.publish(`effects:toggle${effectType.charAt(0).toUpperCase() + effectType.slice(1)}`, enabled);
+    }
+    
+    /**
+     * Handle effects update from other components
+     * @param {Object} data - Effect state data
+     */
+    handleEffectsUpdate(data) {
+        if (data.glow !== undefined && this.elements.enableGlow) {
+            this.elements.enableGlow.checked = data.glow;
+        }
+        
+        if (data.particles !== undefined && this.elements.enableParticles) {
+            this.elements.enableParticles.checked = data.particles;
+        }
+        
+        if (data.pulses !== undefined && this.elements.enablePulses) {
+            this.elements.enablePulses.checked = data.pulses;
+        }
+        
+        if (data.environment !== undefined && this.elements.enableEnvironment) {
+            this.elements.enableEnvironment.checked = data.environment;
+        }
+        
+        if (data.volumetricLights !== undefined && this.elements.enableVolumetric) {
+            this.elements.enableVolumetric.checked = data.volumetricLights;
+        }
+        
+        if (data.scanlines !== undefined && this.elements.enableScanlines) {
+            this.elements.enableScanlines.checked = data.scanlines;
+        }
     }
     
     /**
@@ -538,6 +753,9 @@ export class UIController {
             // Add message to UI
             this.addMessageToUI('user', query);
             
+            // Add to chat history
+            this.addToChatHistory('user', query);
+            
             // Publish send message event
             this.eventBus.publish('ui:sendMessage', query);
             
@@ -586,7 +804,12 @@ export class UIController {
      * @param {object} message - Message data
      */
     handleMcpMessage(message) {
-        this.addMessageToUI(message.role, message.content);
+        this.addMessageToUI(message.role, message.content, message.timestamp);
+        
+        // Add to chat history for non-system messages
+        if (message.role !== 'system') {
+            this.addToChatHistory(message.role, message.content, message.timestamp);
+        }
     }
     
     /**
@@ -639,29 +862,191 @@ export class UIController {
         
         // Show context panel
         this.togglePanel('contextPanel', true);
+    }
+    
+    /**
+     * Format message content with Markdown-like processing
+     * @param {string} content - Message content
+     * @returns {string} Formatted HTML content
+     */
+    formatMessageContent(content) {
+        if (!content) return '';
         
-        // Position context panel near the object
-        // This would require projecting 3D coordinates to 2D screen coordinates
-        // For simplicity, we'll just show it at a fixed position for now
+        // Process code blocks
+        content = content.replace(/```([\s\S]*?)```/g, (match, code) => {
+            return `<pre><code>${this.escapeHtml(code.trim())}</code></pre>`;
+        });
+        
+        // Process inline code
+        content = content.replace(/`([^`]+)`/g, (match, code) => {
+            return `<code>${this.escapeHtml(code)}</code>`;
+        });
+        
+        // Process paragraphs
+        const paragraphs = content.split('\n\n');
+        return paragraphs.map(p => {
+            // Skip already processed code blocks
+            if (p.startsWith('<pre>')) return p;
+            
+            // Process line breaks
+            const lines = p.split('\n').map(line => {
+                // Skip already processed inline code
+                if (line.includes('<code>')) return line;
+                return this.escapeHtml(line);
+            });
+            
+            return `<p>${lines.join('<br>')}</p>`;
+        }).join('');
+    }
+    
+    /**
+     * Escape HTML special characters
+     * @param {string} text - Text to escape
+     * @returns {string} Escaped text
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
     
     /**
      * Add a message to the UI
      * @param {string} role - Message role ('user', 'assistant', or 'system')
      * @param {string} content - Message content
+     * @param {string} [timestamp] - Optional timestamp (ISO string)
      */
-    addMessageToUI(role, content) {
+    addMessageToUI(role, content, timestamp = new Date().toISOString()) {
+        // Create container
+        const messageContainer = document.createElement('div');
+        messageContainer.className = `message-container ${role}-message-container`;
+        
+        // Create header
+        const messageHeader = document.createElement('div');
+        messageHeader.className = 'message-header';
+        
+        // Create avatar
+        const messageAvatar = document.createElement('div');
+        messageAvatar.className = 'message-avatar';
+        
+        // Set avatar icon based on role
+        let iconName = 'user';
+        if (role === 'assistant') {
+            iconName = 'robot';
+        } else if (role === 'system') {
+            iconName = 'info';
+        }
+        
+        messageAvatar.innerHTML = `<iconify-icon icon="ph:${iconName}" width="16"></iconify-icon>`;
+        
+        // Create name
+        const messageName = document.createElement('span');
+        messageName.textContent = role === 'user' ? 'You' : role === 'assistant' ? 'Claude' : 'System';
+        
+        // Create timestamp if provided
+        if (timestamp) {
+            const messageTime = document.createElement('span');
+            messageTime.className = 'message-timestamp';
+            
+            // Format timestamp
+            const date = new Date(timestamp);
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            
+            messageTime.textContent = `${hours}:${minutes}`;
+            messageHeader.appendChild(messageTime);
+        }
+        
+        // Assemble header based on role
+        if (role === 'user') {
+            messageHeader.appendChild(messageName);
+            messageHeader.appendChild(messageAvatar);
+        } else {
+            messageHeader.appendChild(messageAvatar);
+            messageHeader.appendChild(messageName);
+        }
+        
         // Create message element
         const messageElement = document.createElement('div');
         messageElement.className = `message ${role}-message`;
         
-        // Set content
-        messageElement.textContent = content;
+        // Format and set content
+        if (role === 'system') {
+            messageElement.textContent = content;
+        } else {
+            // For typing animation in assistant messages
+            if (role === 'assistant') {
+                messageElement.innerHTML = '';
+                
+                // Start typing animation after a tiny delay
+                setTimeout(() => {
+                    this.animateTyping(messageElement, content);
+                }, 100);
+            } else {
+                const formattedContent = this.formatMessageContent(content);
+                messageElement.innerHTML = formattedContent;
+            }
+        }
+        
+        // Add message actions if not system message
+        if (role !== 'system') {
+            const messageActions = document.createElement('div');
+            messageActions.className = 'message-actions';
+            
+            // Copy button
+            const copyButton = document.createElement('button');
+            copyButton.className = 'action-button';
+            copyButton.innerHTML = '<iconify-icon icon="ph:copy" width="14"></iconify-icon> Copy';
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(content)
+                    .then(() => {
+                        // Temporarily change button text
+                        const originalText = copyButton.innerHTML;
+                        copyButton.innerHTML = '<iconify-icon icon="ph:check" width="14"></iconify-icon> Copied!';
+                        
+                        setTimeout(() => {
+                            copyButton.innerHTML = originalText;
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy message: ', err);
+                    });
+            });
+            
+            messageActions.appendChild(copyButton);
+            messageContainer.appendChild(messageActions);
+        }
+        
+        // Assemble message
+        messageContainer.appendChild(messageHeader);
+        messageContainer.appendChild(messageElement);
         
         // Add to messages container
-        this.elements.messagesContainer.appendChild(messageElement);
+        this.elements.messagesContainer.appendChild(messageContainer);
         
         // Scroll to bottom
+        this.scrollMessagesToBottom();
+        
+        return messageElement;
+    }
+    
+    /**
+     * Animate typing effect for messages
+     * @param {HTMLElement} element - Target element
+     * @param {string} text - Text to animate
+     */
+    animateTyping(element, text) {
+        // If we need to handle Markdown, pre-format the content
+        const formattedContent = this.formatMessageContent(text);
+        
+        // For HTML content, we need to extract the plain text
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = formattedContent;
+        
+        // Set the formatted HTML directly
+        element.innerHTML = formattedContent;
+        
+        // Scroll to keep up with typing
         this.scrollMessagesToBottom();
     }
     
@@ -672,14 +1057,51 @@ export class UIController {
         // Remove existing typing indicator
         this.hideTypingIndicator();
         
+        // Create container
+        const messageContainer = document.createElement('div');
+        messageContainer.className = 'message-container assistant-message-container';
+        messageContainer.id = 'typing-indicator-container';
+        
+        // Create header
+        const messageHeader = document.createElement('div');
+        messageHeader.className = 'message-header';
+        
+        // Create avatar
+        const messageAvatar = document.createElement('div');
+        messageAvatar.className = 'message-avatar';
+        messageAvatar.innerHTML = '<iconify-icon icon="ph:robot" width="16"></iconify-icon>';
+        
+        // Create name
+        const messageName = document.createElement('span');
+        messageName.textContent = 'Claude';
+        
+        // Assemble header
+        messageHeader.appendChild(messageAvatar);
+        messageHeader.appendChild(messageName);
+        
         // Create typing indicator
         const typingIndicator = document.createElement('div');
-        typingIndicator.id = 'typing-indicator';
         typingIndicator.className = 'message assistant-message typing-indicator';
-        typingIndicator.textContent = 'Claude is typing...';
+        typingIndicator.textContent = 'Claude is thinking...';
+        
+        // Create typing dots
+        const typingDots = document.createElement('div');
+        typingDots.className = 'typing-dots';
+        
+        for (let i = 0; i < 3; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'typing-dot';
+            typingDots.appendChild(dot);
+        }
+        
+        typingIndicator.appendChild(typingDots);
+        
+        // Assemble typing indicator
+        messageContainer.appendChild(messageHeader);
+        messageContainer.appendChild(typingIndicator);
         
         // Add to messages container
-        this.elements.messagesContainer.appendChild(typingIndicator);
+        this.elements.messagesContainer.appendChild(messageContainer);
         
         // Scroll to bottom
         this.scrollMessagesToBottom();
@@ -689,7 +1111,7 @@ export class UIController {
      * Hide typing indicator
      */
     hideTypingIndicator() {
-        const existingIndicator = document.getElementById('typing-indicator');
+        const existingIndicator = document.getElementById('typing-indicator-container');
         if (existingIndicator) {
             existingIndicator.remove();
         }
@@ -699,7 +1121,22 @@ export class UIController {
      * Scroll messages container to bottom
      */
     scrollMessagesToBottom() {
-        this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
+        if (this.elements.messagesContainer) {
+            this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
+        }
+    }
+    
+    /**
+     * Update scroll position for automatic following
+     */
+    updateScrollPosition() {
+        // Only scroll if already near bottom (within 100px)
+        const { scrollTop, scrollHeight, clientHeight } = this.elements.messagesContainer;
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+        
+        if (distanceFromBottom < 100) {
+            this.scrollMessagesToBottom();
+        }
     }
     
     /**
@@ -715,7 +1152,17 @@ export class UIController {
         // Create notification element
         const notificationElement = document.createElement('div');
         notificationElement.className = `notification ${type}`;
-        notificationElement.textContent = message;
+        
+        // Add appropriate icon based on type
+        let iconName = 'info';
+        if (type === 'success') iconName = 'check-circle';
+        if (type === 'warning') iconName = 'warning';
+        if (type === 'error') iconName = 'x-circle';
+        
+        notificationElement.innerHTML = `
+            <iconify-icon icon="ph:${iconName}" width="18"></iconify-icon>
+            <span>${message}</span>
+        `;
         
         // Add to notification area
         this.elements.notificationArea.appendChild(notificationElement);
