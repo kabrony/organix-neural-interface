@@ -1,9 +1,9 @@
 /**
- * ORGANIX Neural Interface - Enhanced UI Controller
+ * ORGANIX Neural Interface - UI Controller
  * 
- * Manages the user interface with an enhanced cyberpunk aesthetic,
- * handling user interactions, displaying information, and coordinating
- * between the 3D visualization and the Claude MCP integration.
+ * Manages the user interface of the ORGANIX application, handling
+ * user interactions, displaying information, and coordinating between
+ * the 3D visualization and the Claude MCP integration.
  */
 
 export class UIController {
@@ -24,23 +24,10 @@ export class UIController {
         // UI elements
         this.elements = {};
         
-        // Message history
-        this.messageHistory = [];
-        
-        // Cyberpunk theme colors
-        this.cyberpunkColors = {
-            neonGreen: '#00ff8e',
-            acidGreen: '#39ff14',
-            neonOrange: '#ff8a00',
-            lightBlue: '#3ad6ff',
-            electricBlue: '#0cffe1',
-            warningRed: '#ff3c3c'
-        };
-        
         // Initialize the UI
         this.initialize();
         
-        console.log('Enhanced UI Controller initialized with cyberpunk theme');
+        console.log('UI Controller initialized');
     }
     
     /**
@@ -58,12 +45,6 @@ export class UIController {
         
         // Load saved settings
         this.loadSavedSettings();
-        
-        // Initialize typing animation
-        this.initializeTypingAnimation();
-        
-        // Add cyberpunk visual effects to UI
-        this.applyCyberpunkEffects();
         
         // Initial UI update
         this.updateUI();
@@ -84,7 +65,7 @@ export class UIController {
         this.elements.userInput = document.getElementById('user-input');
         this.elements.sendButton = document.getElementById('send-btn');
         this.elements.messagesContainer = document.getElementById('messages-container');
-        this.elements.clearChat = document.getElementById('clear-chat');
+        this.elements.clearChatButton = document.getElementById('clear-chat');
         
         // Controls
         this.elements.ambientIntensity = document.getElementById('ambient-intensity');
@@ -128,11 +109,6 @@ export class UIController {
         this.elements.settingsClose = document.getElementById('settings-close');
         this.elements.helpClose = document.getElementById('help-close');
         this.elements.contextClose = document.getElementById('context-close');
-        
-        // Loading screen
-        this.elements.loadingScreen = document.getElementById('loading-screen');
-        this.elements.progressFill = document.querySelector('.progress-fill');
-        this.elements.progressText = document.querySelector('.progress-text');
     }
     
     /**
@@ -142,10 +118,9 @@ export class UIController {
         // Message input
         this.elements.sendButton.addEventListener('click', this.handleSendMessage.bind(this));
         this.elements.userInput.addEventListener('keydown', this.handleInputKeyDown.bind(this));
-        this.elements.clearChat.addEventListener('click', this.handleClearChat.bind(this));
-        
-        // Make textarea auto-resize
-        this.elements.userInput.addEventListener('input', this.autoResizeTextarea.bind(this));
+        if (this.elements.clearChatButton) {
+            this.elements.clearChatButton.addEventListener('click', this.handleClearChat.bind(this));
+        }
         
         // Panel toggles
         this.elements.claudePanelToggle.addEventListener('click', () => this.togglePanel('claudePanel'));
@@ -166,8 +141,12 @@ export class UIController {
         this.elements.enableParticles.addEventListener('change', this.handleEffectToggle.bind(this));
         this.elements.enablePulses.addEventListener('change', this.handleEffectToggle.bind(this));
         this.elements.enableEnvironment.addEventListener('change', this.handleEffectToggle.bind(this));
-        this.elements.enableVolumetric.addEventListener('change', this.handleEffectToggle.bind(this));
-        this.elements.enableScanlines.addEventListener('change', this.handleEffectToggle.bind(this));
+        if (this.elements.enableVolumetric) {
+            this.elements.enableVolumetric.addEventListener('change', this.handleEffectToggle.bind(this));
+        }
+        if (this.elements.enableScanlines) {
+            this.elements.enableScanlines.addEventListener('change', this.handleEffectToggle.bind(this));
+        }
         
         // Control buttons
         this.elements.resetViewButton.addEventListener('click', this.handleResetView.bind(this));
@@ -192,9 +171,6 @@ export class UIController {
         
         // Context panel
         document.getElementById('query-object').addEventListener('click', this.handleQuerySelectedObject.bind(this));
-        
-        // Window resize
-        window.addEventListener('resize', this.handleResize.bind(this));
     }
     
     /**
@@ -211,89 +187,10 @@ export class UIController {
         
         // Scene events
         this.eventBus.subscribe('scene:objectSelected', this.handleObjectSelected.bind(this));
-        this.eventBus.subscribe('scene:loadingProgress', this.updateLoadingProgress.bind(this));
-        this.eventBus.subscribe('scene:loadingComplete', this.hideLoadingScreen.bind(this));
         
         // UI events (mostly for notifications)
         this.eventBus.subscribe('ui:notification', this.showNotification.bind(this));
         this.eventBus.subscribe('ui:toggleConnectionPanel', () => this.togglePanel('settingsPanel'));
-    }
-    
-    /**
-     * Auto-resize the textarea based on content
-     */
-    autoResizeTextarea() {
-        const textarea = this.elements.userInput;
-        
-        // Reset height to auto to get correct scrollHeight
-        textarea.style.height = 'auto';
-        
-        // Set to scrollHeight but cap between 60px and 200px
-        const newHeight = Math.min(Math.max(textarea.scrollHeight, 60), 200);
-        textarea.style.height = newHeight + 'px';
-    }
-    
-    /**
-     * Initialize cyberpunk typing animation for messages
-     */
-    initializeTypingAnimation() {
-        // Define CSS for the animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes cyberpunk-typing {
-                from { width: 0; }
-                to { width: 100%; }
-            }
-            
-            .typing-animation {
-                display: inline-block;
-                overflow: hidden;
-                border-right: 3px solid ${this.cyberpunkColors.electricBlue};
-                white-space: nowrap;
-                animation: 
-                    cyberpunk-typing 1.5s steps(40, end),
-                    cursor-blink 0.75s step-end infinite;
-            }
-            
-            @keyframes cursor-blink {
-                from, to { border-color: transparent; }
-                50% { border-color: ${this.cyberpunkColors.electricBlue}; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    /**
-     * Apply cyberpunk visual effects to UI elements
-     */
-    applyCyberpunkEffects() {
-        // Add glowing border effects
-        document.documentElement.style.setProperty('--neon-green', this.cyberpunkColors.neonGreen);
-        document.documentElement.style.setProperty('--acid-green', this.cyberpunkColors.acidGreen);
-        document.documentElement.style.setProperty('--neon-orange', this.cyberpunkColors.neonOrange);
-        document.documentElement.style.setProperty('--light-blue', this.cyberpunkColors.lightBlue);
-        document.documentElement.style.setProperty('--electric-blue', this.cyberpunkColors.electricBlue);
-        
-        // Create data flow animation on loading screen
-        const loadingLogo = document.querySelector('.logo-large');
-        if (loadingLogo) {
-            loadingLogo.style.background = `linear-gradient(90deg, 
-                ${this.cyberpunkColors.neonGreen}, 
-                ${this.cyberpunkColors.electricBlue}, 
-                ${this.cyberpunkColors.neonOrange},
-                ${this.cyberpunkColors.acidGreen})`;
-            loadingLogo.style.webkitBackgroundClip = 'text';
-            loadingLogo.style.backgroundClip = 'text';
-            loadingLogo.style.color = 'transparent';
-            loadingLogo.style.backgroundSize = '300% 100%';
-            loadingLogo.style.animation = 'data-flow 4s linear infinite';
-        }
-        
-        // Add pulse effect to buttons
-        const buttons = document.querySelectorAll('.primary-button');
-        buttons.forEach(button => {
-            button.style.animation = 'pulse-glow 2s infinite';
-        });
     }
     
     /**
@@ -313,25 +210,6 @@ export class UIController {
             if (savedPostProcessing !== null) {
                 this.elements.postProcessing.checked = savedPostProcessing === 'true';
                 this.handlePostProcessingChange({ target: this.elements.postProcessing });
-            }
-            
-            // Load effect settings
-            const savedEffects = localStorage.getItem('organix-effects');
-            if (savedEffects) {
-                const effects = JSON.parse(savedEffects);
-                if (effects.glow !== undefined) this.elements.enableGlow.checked = effects.glow;
-                if (effects.particles !== undefined) this.elements.enableParticles.checked = effects.particles;
-                if (effects.pulses !== undefined) this.elements.enablePulses.checked = effects.pulses;
-                if (effects.environment !== undefined) this.elements.enableEnvironment.checked = effects.environment;
-                if (effects.volumetric !== undefined && this.elements.enableVolumetric) {
-                    this.elements.enableVolumetric.checked = effects.volumetric;
-                }
-                if (effects.scanlines !== undefined && this.elements.enableScanlines) {
-                    this.elements.enableScanlines.checked = effects.scanlines;
-                }
-                
-                // Update visual effects based on loaded settings
-                this.updateEffectSettings();
             }
             
             // Load MCP mode
@@ -380,30 +258,6 @@ export class UIController {
                 }
             }
         });
-        
-        // Update MCP mode UI
-        this.updateMcpModeUI(this.elements.mcpMode.value);
-    }
-    
-    /**
-     * Update effect settings
-     */
-    updateEffectSettings() {
-        // Collect settings from UI
-        const effectSettings = {
-            glow: this.elements.enableGlow.checked,
-            particles: this.elements.enableParticles.checked,
-            pulses: this.elements.enablePulses.checked,
-            environment: this.elements.enableEnvironment.checked,
-            volumetric: this.elements.enableVolumetric ? this.elements.enableVolumetric.checked : true,
-            scanlines: this.elements.enableScanlines ? this.elements.enableScanlines.checked : true
-        };
-        
-        // Save to localStorage
-        localStorage.setItem('organix-effects', JSON.stringify(effectSettings));
-        
-        // Publish effect settings to the event bus
-        this.eventBus.publish('control:effectSettings', effectSettings);
     }
     
     /**
@@ -429,6 +283,23 @@ export class UIController {
     }
     
     /**
+     * Close all panels
+     */
+    closeAllPanels() {
+        this.panelStates.settingsPanel = false;
+        this.panelStates.helpPanel = false;
+        this.panelStates.contextPanel = false;
+        this.updateUI();
+    }
+    
+    /**
+     * Toggle help panel
+     */
+    toggleHelpPanel() {
+        this.togglePanel('helpPanel');
+    }
+    
+    /**
      * Handle send message button click
      */
     handleSendMessage() {
@@ -438,20 +309,30 @@ export class UIController {
             // Add message to UI
             this.addMessageToUI('user', message);
             
-            // Add message to history
-            this.messageHistory.push({
-                role: 'user',
-                content: message,
-                timestamp: new Date().toISOString()
-            });
-            
             // Clear input
             this.elements.userInput.value = '';
-            this.autoResizeTextarea();
             
             // Publish send message event
             this.eventBus.publish('ui:sendMessage', message);
         }
+    }
+    
+    /**
+     * Handle clear chat button click
+     */
+    handleClearChat() {
+        // Clear the messages container
+        this.elements.messagesContainer.innerHTML = '';
+        
+        // Add a welcome message
+        this.addMessageToUI('assistant', 'Chat history has been cleared. How can I help you?');
+        
+        // Show notification
+        this.showNotification({
+            type: 'info',
+            message: 'Chat history cleared',
+            duration: 3000
+        });
     }
     
     /**
@@ -464,28 +345,12 @@ export class UIController {
             event.preventDefault();
             this.handleSendMessage();
         }
-    }
-    
-    /**
-     * Handle clear chat button click
-     */
-    handleClearChat() {
-        // Confirm before clearing
-        if (confirm('Are you sure you want to clear the chat history?')) {
-            // Clear UI
-            this.elements.messagesContainer.innerHTML = '';
-            
-            // Clear history
-            this.messageHistory = [];
-            
-            // Add system message
-            this.addMessageToUI('system', 'Chat history cleared');
-            
-            // Add welcome message
-            setTimeout(() => {
-                this.addMessageToUI('assistant', 'The chat history has been cleared. How can I assist you with the neural visualization?');
-            }, 500);
-        }
+        
+        // Auto-resize the textarea
+        setTimeout(() => {
+            event.target.style.height = 'auto';
+            event.target.style.height = Math.min(200, event.target.scrollHeight) + 'px';
+        }, 0);
     }
     
     /**
@@ -513,11 +378,30 @@ export class UIController {
     }
     
     /**
-     * Handle toggle of visual effects
+     * Handle effect toggle change
+     * @param {Event} event - Change event
      */
     handleEffectToggle(event) {
-        // Update effect settings
-        this.updateEffectSettings();
+        const effectId = event.target.id;
+        const enabled = event.target.checked;
+        
+        // Map effect ID to effect name
+        const effectMap = {
+            'enable-glow': 'glow',
+            'enable-particles': 'particles',
+            'enable-pulses': 'pulses',
+            'enable-environment': 'environment',
+            'enable-volumetric': 'volumetricLights',
+            'enable-scanlines': 'scanlines'
+        };
+        
+        const effectName = effectMap[effectId];
+        if (effectName) {
+            this.eventBus.publish('control:effectToggle', {
+                effect: effectName,
+                enabled: enabled
+            });
+        }
     }
     
     /**
@@ -729,13 +613,6 @@ export class UIController {
             // Add message to UI
             this.addMessageToUI('user', query);
             
-            // Add to message history
-            this.messageHistory.push({
-                role: 'user',
-                content: query,
-                timestamp: new Date().toISOString()
-            });
-            
             // Publish send message event
             this.eventBus.publish('ui:sendMessage', query);
             
@@ -784,10 +661,6 @@ export class UIController {
      * @param {object} message - Message data
      */
     handleMcpMessage(message) {
-        // Add message to history
-        this.messageHistory.push(message);
-        
-        // Add message to UI
         this.addMessageToUI(message.role, message.content);
     }
     
@@ -841,233 +714,89 @@ export class UIController {
         
         // Show context panel
         this.togglePanel('contextPanel', true);
-        
-        // Position context panel near the object
-        // This would require projecting 3D coordinates to 2D screen coordinates
-        // For simplicity, we'll just show it at a fixed position for now
     }
     
     /**
-     * Update loading progress
-     * @param {object} data - Progress data
-     */
-    updateLoadingProgress(data) {
-        const { progress, message } = data;
-        
-        if (this.elements.progressFill) {
-            this.elements.progressFill.style.width = `${progress * 100}%`;
-        }
-        
-        if (this.elements.progressText && message) {
-            this.elements.progressText.textContent = message;
-        }
-    }
-    
-    /**
-     * Hide loading screen
-     */
-    hideLoadingScreen() {
-        if (this.elements.loadingScreen) {
-            this.elements.loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                this.elements.loadingScreen.style.display = 'none';
-            }, 500);
-        }
-    }
-    
-    /**
-     * Handle window resize
-     */
-    handleResize() {
-        // Update panels and UI elements as needed
-        if (this.elements.messagesContainer) {
-            this.scrollMessagesToBottom();
-        }
-    }
-    
-    /**
-     * Add a message to the UI with enhanced styling
+     * Add a message to the UI
      * @param {string} role - Message role ('user', 'assistant', or 'system')
      * @param {string} content - Message content
      */
     addMessageToUI(role, content) {
-        // Create message container
+        // Create container
         const messageContainer = document.createElement('div');
         messageContainer.className = `message-container ${role}-message-container`;
         
-        // Create message header
+        // Create header with avatar
         const messageHeader = document.createElement('div');
         messageHeader.className = 'message-header';
         
-        // Create avatar
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
         
-        // Set avatar icon based on role
-        let avatarIcon;
-        switch (role) {
-            case 'user':
-                avatarIcon = 'ph:user';
-                break;
-            case 'assistant':
-                avatarIcon = 'ph:robot';
-                break;
-            case 'system':
-                avatarIcon = 'ph:info';
-                break;
-            default:
-                avatarIcon = 'ph:chat';
-        }
+        // Add icon based on role
+        const iconElement = document.createElement('iconify-icon');
+        iconElement.setAttribute('width', '16');
         
-        // Add icon to avatar
-        avatar.innerHTML = `<iconify-icon icon="${avatarIcon}" width="16"></iconify-icon>`;
-        
-        // Add avatar and role name to header
-        messageHeader.appendChild(avatar);
-        
-        // Add sender name
-        const sender = document.createElement('span');
-        switch (role) {
-            case 'user':
-                sender.textContent = 'You';
-                break;
-            case 'assistant':
-                sender.textContent = 'Claude';
-                break;
-            case 'system':
-                sender.textContent = 'System';
-                break;
-            default:
-                sender.textContent = role;
-        }
-        messageHeader.appendChild(sender);
-        
-        // Add timestamp for non-system messages
-        if (role !== 'system') {
-            const timestamp = document.createElement('span');
-            timestamp.className = 'message-timestamp';
-            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            messageHeader.appendChild(timestamp);
-        }
-        
-        // For user messages, append the avatar at the end
         if (role === 'user') {
+            iconElement.setAttribute('icon', 'ph:user');
+            messageHeader.appendChild(document.createTextNode('You'));
             messageHeader.appendChild(avatar);
-            messageHeader.insertBefore(sender, messageHeader.firstChild);
+        } else if (role === 'assistant') {
+            iconElement.setAttribute('icon', 'ph:brain-circuit');
+            avatar.appendChild(iconElement);
+            messageHeader.appendChild(avatar);
+            messageHeader.appendChild(document.createTextNode('Claude'));
+        } else {
+            iconElement.setAttribute('icon', 'ph:info');
+            avatar.appendChild(iconElement);
+            messageHeader.appendChild(avatar);
+            messageHeader.appendChild(document.createTextNode('System'));
         }
         
-        // Create message element
+        avatar.appendChild(iconElement);
+        
+        // Add timestamp
+        const timestamp = document.createElement('span');
+        timestamp.className = 'message-timestamp';
+        timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        messageHeader.appendChild(timestamp);
+        
+        messageContainer.appendChild(messageHeader);
+        
+        // Create message
         const messageElement = document.createElement('div');
         messageElement.className = `message ${role}-message`;
+        messageElement.textContent = content;
         
-        // Format content (handle markdown, code blocks, etc.)
-        const formattedContent = this.formatMessageContent(content);
-        messageElement.innerHTML = formattedContent;
-        
-        // Add components to message container
-        messageContainer.appendChild(messageHeader);
         messageContainer.appendChild(messageElement);
         
-        // Add message actions for non-system messages
-        if (role !== 'system') {
-            const messageActions = document.createElement('div');
-            messageActions.className = 'message-actions';
+        // Add action buttons for assistant messages
+        if (role === 'assistant') {
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
             
-            // Only add copy button for now
-            if (role === 'assistant') {
-                const copyButton = document.createElement('button');
-                copyButton.className = 'action-button';
-                copyButton.innerHTML = '<iconify-icon icon="ph:copy" width="14"></iconify-icon> Copy';
-                copyButton.addEventListener('click', () => this.copyMessageToClipboard(content));
-                messageActions.appendChild(copyButton);
-            }
+            const copyButton = document.createElement('button');
+            copyButton.className = 'action-button';
+            copyButton.innerHTML = '<iconify-icon icon="ph:copy" width="14"></iconify-icon> Copy';
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(content).then(() => {
+                    this.showNotification({
+                        type: 'success',
+                        message: 'Copied to clipboard',
+                        duration: 2000
+                    });
+                });
+            });
             
-            messageContainer.appendChild(messageActions);
+            actionsDiv.appendChild(copyButton);
+            messageContainer.appendChild(actionsDiv);
         }
         
         // Add to messages container
         this.elements.messagesContainer.appendChild(messageContainer);
         
-        // Apply typing animation for assistant messages (optional)
-        if (role === 'assistant' && content.length < 500) {
-            const textElement = messageElement.querySelector('p') || messageElement;
-            if (textElement && !textElement.classList.contains('typing-animation')) {
-                const originalContent = textElement.innerHTML;
-                textElement.innerHTML = '';
-                textElement.classList.add('typing-animation');
-                
-                // Reset after animation completes
-                setTimeout(() => {
-                    textElement.innerHTML = originalContent;
-                    textElement.classList.remove('typing-animation');
-                }, 1500);
-            }
-        }
-        
         // Scroll to bottom
         this.scrollMessagesToBottom();
-    }
-    
-    /**
-     * Format message content with markdown-like features
-     * @param {string} content - Raw message content
-     * @returns {string} Formatted HTML content
-     */
-    formatMessageContent(content) {
-        // Simple converter for basic markdown-like syntax
-        let formatted = content
-            // Handle paragraphs
-            .split('\n\n').map(para => `<p>${para}</p>`).join('')
-            // Handle code blocks
-            .replace(/```([a-z]*)\n([\s\S]*?)\n```/g, (_, lang, code) => {
-                return `<pre><code class="language-${lang}">${this.escapeHTML(code.trim())}</code></pre>`;
-            })
-            // Handle inline code
-            .replace(/`([^`]+)`/g, (_, code) => {
-                return `<code>${this.escapeHTML(code)}</code>`;
-            });
-        
-        // If no paragraphs were created (no double newlines), wrap in a single paragraph
-        if (!formatted.includes('<p>')) {
-            formatted = `<p>${formatted}</p>`;
-        }
-        
-        return formatted;
-    }
-    
-    /**
-     * Escape HTML special characters
-     * @param {string} html - Raw HTML
-     * @returns {string} Escaped HTML
-     */
-    escapeHTML(html) {
-        return html
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-    
-    /**
-     * Copy message content to clipboard
-     * @param {string} content - Message content to copy
-     */
-    copyMessageToClipboard(content) {
-        navigator.clipboard.writeText(content).then(() => {
-            this.showNotification({
-                type: 'success',
-                message: 'Copied to clipboard',
-                duration: 2000
-            });
-        }).catch(err => {
-            console.error('Failed to copy text:', err);
-            this.showNotification({
-                type: 'error',
-                message: 'Failed to copy to clipboard',
-                duration: 3000
-            });
-        });
     }
     
     /**
@@ -1077,44 +806,44 @@ export class UIController {
         // Remove existing typing indicator
         this.hideTypingIndicator();
         
-        // Create typing indicator container
+        // Create container
         const messageContainer = document.createElement('div');
         messageContainer.className = 'message-container assistant-message-container';
-        messageContainer.id = 'typing-indicator-container';
+        messageContainer.id = 'typing-container';
         
-        // Create message header
+        // Create header with avatar
         const messageHeader = document.createElement('div');
         messageHeader.className = 'message-header';
         
-        // Create avatar
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
-        avatar.innerHTML = '<iconify-icon icon="ph:robot" width="16"></iconify-icon>';
         
-        // Add avatar and role name to header
+        const iconElement = document.createElement('iconify-icon');
+        iconElement.setAttribute('icon', 'ph:brain-circuit');
+        iconElement.setAttribute('width', '16');
+        avatar.appendChild(iconElement);
+        
         messageHeader.appendChild(avatar);
         messageHeader.appendChild(document.createTextNode('Claude'));
         
+        messageContainer.appendChild(messageHeader);
+        
         // Create typing indicator
         const typingIndicator = document.createElement('div');
-        typingIndicator.id = 'typing-indicator';
         typingIndicator.className = 'message assistant-message typing-indicator';
-        typingIndicator.textContent = 'Claude is thinking';
+        typingIndicator.textContent = 'Thinking...';
         
-        // Add typing dots
-        const typingDots = document.createElement('div');
-        typingDots.className = 'typing-dots';
+        // Add dots animation
+        const dotsContainer = document.createElement('div');
+        dotsContainer.className = 'typing-dots';
         
         for (let i = 0; i < 3; i++) {
             const dot = document.createElement('div');
             dot.className = 'typing-dot';
-            typingDots.appendChild(dot);
+            dotsContainer.appendChild(dot);
         }
         
-        typingIndicator.appendChild(typingDots);
-        
-        // Add components to message container
-        messageContainer.appendChild(messageHeader);
+        typingIndicator.appendChild(dotsContainer);
         messageContainer.appendChild(typingIndicator);
         
         // Add to messages container
@@ -1128,7 +857,7 @@ export class UIController {
      * Hide typing indicator
      */
     hideTypingIndicator() {
-        const existingIndicator = document.getElementById('typing-indicator-container');
+        const existingIndicator = document.getElementById('typing-container');
         if (existingIndicator) {
             existingIndicator.remove();
         }
@@ -1138,9 +867,7 @@ export class UIController {
      * Scroll messages container to bottom
      */
     scrollMessagesToBottom() {
-        if (this.elements.messagesContainer) {
-            this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
-        }
+        this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
     }
     
     /**
@@ -1158,26 +885,30 @@ export class UIController {
         notificationElement.className = `notification ${type}`;
         
         // Add icon based on type
-        let iconName;
+        const iconElement = document.createElement('iconify-icon');
+        iconElement.setAttribute('width', '18');
+        iconElement.style.marginRight = '8px';
+        
         switch (type) {
             case 'success':
-                iconName = 'ph:check-circle';
+                iconElement.setAttribute('icon', 'ph:check-circle');
                 break;
             case 'warning':
-                iconName = 'ph:warning';
+                iconElement.setAttribute('icon', 'ph:warning');
                 break;
             case 'error':
-                iconName = 'ph:x-circle';
+                iconElement.setAttribute('icon', 'ph:x-circle');
                 break;
-            case 'info':
             default:
-                iconName = 'ph:info';
+                iconElement.setAttribute('icon', 'ph:info');
+                break;
         }
         
-        notificationElement.innerHTML = `
-            <iconify-icon icon="${iconName}" width="16"></iconify-icon>
-            <span>${message}</span>
-        `;
+        notificationElement.appendChild(iconElement);
+        
+        // Add message
+        const messageText = document.createTextNode(message);
+        notificationElement.appendChild(messageText);
         
         // Add to notification area
         this.elements.notificationArea.appendChild(notificationElement);
