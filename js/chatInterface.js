@@ -1,137 +1,98 @@
 /**
- * ORGANIX Neural Interface - Enhanced Chat Interface
- * 
- * Provides advanced chat functionality for the ORGANIX dashboard,
- * with modern UI features and integration with the 3D visualization.
+ * ORGANIX Neural Interface - Advanced Chat Interface
+ * Handles all UI interactions with the Claude chat interface
  */
 
 export class ChatInterface {
-    constructor(eventBus, mcpConnector) {
+    constructor(eventBus) {
         this.eventBus = eventBus;
-        this.mcpConnector = mcpConnector;
         
-        // DOM elements
+        // Cache DOM elements
         this.elements = {
             messagesContainer: document.getElementById('messages-container'),
             userInput: document.getElementById('user-input'),
             sendButton: document.getElementById('send-btn'),
-            clearButton: document.querySelector('#clear-chat') || null,
-            claudePanel: document.getElementById('claude-panel')
+            clearChat: document.getElementById('clear-chat')
         };
         
-        // Chat state
+        // Message history
         this.messageHistory = [];
-        this.isTyping = false;
-        this.typingTimeout = null;
         
-        // Initialize
-        this.initialize();
+        // Initialize event listeners
+        this.initEventListeners();
+        
+        // Subscribe to MCP events
+        this.initEventSubscriptions();
         
         console.log('Chat Interface initialized');
     }
     
     /**
-     * Initialize the chat interface
+     * Initialize UI event listeners
      */
-    initialize() {
-        // Set up event listeners
-        this.setupEventListeners();
+    initEventListeners() {
+        // Send button click
+        this.elements.sendButton.addEventListener('click', () => this.sendMessage());
         
-        // Subscribe to event bus events
-        this.setupEventBusListeners();
+        // Enter key press in input field
+        this.elements.userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendMessage();
+            }
+        });
+        
+        // Auto-resize textarea as user types
+        this.elements.userInput.addEventListener('input', () => this.autoResizeTextarea());
+        
+        // Clear chat button
+        this.elements.clearChat.addEventListener('click', () => this.clearChat());
     }
     
     /**
-     * Set up DOM event listeners
+     * Initialize event bus subscriptions
      */
-    setupEventListeners() {
-        // Send message on button click
-        if (this.elements.sendButton) {
-            this.elements.sendButton.addEventListener('click', () => this.sendMessage());
-        }
-        
-        // Send message on Enter key (but not with Shift+Enter)
-        if (this.elements.userInput) {
-            this.elements.userInput.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    this.sendMessage();
-                }
-                
-                // Auto-resize textarea
-                this.autoResizeTextarea();
-            });
-            
-            // Input change event for auto-resize
-            this.elements.userInput.addEventListener('input', () => this.autoResizeTextarea());
-        }
-        
-        // Clear chat history
-        if (this.elements.clearButton) {
-            this.elements.clearButton.addEventListener('click', () => this.clearChat());
-        }
-    }
-    
-    /**
-     * Auto-resize the textarea based on content
-     */
-    autoResizeTextarea() {
-        const textarea = this.elements.userInput;
-        if (!textarea) return;
-        
-        // Reset height to measure the scrollHeight correctly
-        textarea.style.height = 'auto';
-        
-        // Set new height (with min and max constraints handled in CSS)
-        const newHeight = Math.min(Math.max(60, textarea.scrollHeight), 200);
-        textarea.style.height = newHeight + 'px';
-    }
-    
-    /**
-     * Set up event bus listeners
-     */
-    setupEventBusListeners() {
+    initEventSubscriptions() {
         // Listen for incoming messages from MCP
         this.eventBus.subscribe('mcp:message', (message) => this.displayMessage(message));
         
-        // Listen for typing indicator events
+        // Listen for typing indicators
         this.eventBus.subscribe('mcp:typingStart', () => this.showTypingIndicator());
         this.eventBus.subscribe('mcp:typingEnd', () => this.hideTypingIndicator());
-        
-        // Listen for object query events
-        this.eventBus.subscribe('mcp:objectQuery', (data) => {
-            // When user clicks "Ask Claude About This" on an object
-            this.elements.userInput.value = data.query;
-            this.autoResizeTextarea();
-        });
     }
     
     /**
-     * Send a message from the user input
+     * Send a message from the user
      */
     sendMessage() {
-        const message = this.elements.userInput.value.trim();
+        const messageContent = this.elements.userInput.value.trim();
         
-        if (!message) return;
+        if (!messageContent) return;
         
-        // Display the user message immediately
-        this.displayMessage({
+        // Create user message object
+        const message = {
             role: 'user',
-            content: message,
+            content: messageContent,
             timestamp: new Date().toISOString()
-        });
+        };
         
-        // Clear the input
+        // Add to UI
+        this.displayMessage(message);
+        
+        // Clear input
         this.elements.userInput.value = '';
-        this.autoResizeTextarea();
+        this.elements.userInput.style.height = 'auto';
         
-        // Send to MCPConnector (which will handle the response)
-        this.eventBus.publish('ui:sendMessage', message);
+        // Send to event bus for MCP handling
+        this.eventBus.publish('ui:sendMessage', messageContent);
+        
+        // Add to history
+        this.messageHistory.push(message);
     }
     
     /**
-     * Display a message in the chat
-     * @param {Object} message - Message object with role, content, timestamp
+     * Display a message in the chat interface
+     * @param {Object} message - Message object with role, content and timestamp
      */
     displayMessage(message) {
         // Create message container
@@ -142,184 +103,149 @@ export class ChatInterface {
         const messageHeader = document.createElement('div');
         messageHeader.className = 'message-header';
         
-        // Avatar with icon
+        // Add avatar
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
         
-        // Different icons based on role
+        // Add different icons based on role
         let iconName = 'user';
-        if (message.role === 'assistant') iconName = 'robot';
-        else if (message.role === 'system') iconName = 'info';
+        if (message.role === 'assistant') {
+            iconName = 'robot';
+        } else if (message.role === 'system') {
+            iconName = 'info';
+        }
         
         avatar.innerHTML = `<iconify-icon icon="ph:${iconName}" width="16"></iconify-icon>`;
+        messageHeader.appendChild(avatar);
         
-        // Role name
-        const roleName = document.createElement('span');
-        roleName.textContent = message.role === 'user' ? 'You' : 
-                               message.role === 'assistant' ? 'Claude' : 'System';
+        // Add name
+        const name = document.createElement('span');
+        name.textContent = message.role === 'assistant' ? 'Claude' : 
+                          message.role === 'user' ? 'You' : 'System';
+        messageHeader.appendChild(name);
         
-        // Timestamp if available
+        // Add timestamp if available
         if (message.timestamp) {
             const timestamp = document.createElement('span');
             timestamp.className = 'message-timestamp';
-            const date = new Date(message.timestamp);
-            timestamp.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            timestamp.textContent = this.formatTimestamp(message.timestamp);
             messageHeader.appendChild(timestamp);
         }
         
-        // Assemble header based on role
-        if (message.role === 'user') {
-            messageHeader.appendChild(roleName);
-            messageHeader.appendChild(avatar);
-        } else {
-            messageHeader.appendChild(avatar);
-            messageHeader.appendChild(roleName);
-        }
+        messageContainer.appendChild(messageHeader);
         
         // Create message content
         const messageElement = document.createElement('div');
         messageElement.className = `message ${message.role}-message`;
         
-        // Process message content - handle markdown-style code blocks
-        const formattedContent = this.formatMessageContent(message.content);
-        messageElement.innerHTML = formattedContent;
+        // Process message content (handle markdown, code blocks, etc.)
+        messageElement.innerHTML = this.processMessageContent(message.content);
         
-        // Add message actions for non-system messages
+        messageContainer.appendChild(messageElement);
+        
+        // Add action buttons if not system message
         if (message.role !== 'system') {
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'message-actions';
+            const actionsElement = document.createElement('div');
+            actionsElement.className = 'message-actions';
             
             // Copy button
             const copyButton = document.createElement('button');
             copyButton.className = 'action-button';
             copyButton.innerHTML = '<iconify-icon icon="ph:copy" width="14"></iconify-icon> Copy';
-            copyButton.addEventListener('click', () => this.copyMessageToClipboard(message.content));
+            copyButton.addEventListener('click', () => this.copyToClipboard(message.content));
             
-            actionsDiv.appendChild(copyButton);
-            messageContainer.appendChild(actionsDiv);
+            actionsElement.appendChild(copyButton);
+            
+            messageContainer.appendChild(actionsElement);
         }
         
-        // Assemble and add to chat
-        messageContainer.appendChild(messageHeader);
-        messageContainer.appendChild(messageElement);
-        
+        // Add to messages container
         this.elements.messagesContainer.appendChild(messageContainer);
         
         // Scroll to bottom
         this.scrollToBottom();
-        
-        // Store in message history
-        this.messageHistory.push(message);
     }
     
     /**
-     * Format message content with markdown-style parsing
+     * Process message content to handle special formatting
      * @param {string} content - Raw message content
-     * @returns {string} Formatted HTML
+     * @returns {string} - Processed HTML content
      */
-    formatMessageContent(content) {
-        // Handle code blocks with ```
-        content = content.replace(/```([a-z]*)\n([\s\S]*?)```/g, (match, language, code) => {
-            return `<pre><code class="language-${language}">${this.escapeHtml(code)}</code></pre>`;
-        });
+    processMessageContent(content) {
+        // Simple MD-like processing
+        let processed = content;
         
-        // Handle inline code with `code`
-        content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
+        // Convert code blocks with ```
+        processed = processed.replace(/```(\w*)([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
         
-        // Handle paragraphs
-        content = content.split('\n\n').map(para => `<p>${para}</p>`).join('');
+        // Convert inline code with `
+        processed = processed.replace(/`([^`]+)`/g, '<code>$1</code>');
         
-        // Replace newlines with <br> for line breaks within paragraphs
-        content = content.replace(/\n/g, '<br>');
+        // Convert bold with **
+        processed = processed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
         
-        return content;
-    }
-    
-    /**
-     * Escape HTML special characters
-     */
-    escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
+        // Convert italic with *
+        processed = processed.replace(/\*([^*]+)\*/g, '<em>$1</em>');
         
-        return text.replace(/[&<>"']/g, m => map[m]);
-    }
-    
-    /**
-     * Copy message content to clipboard
-     * @param {string} content - Message content to copy
-     */
-    copyMessageToClipboard(content) {
-        navigator.clipboard.writeText(content).then(
-            () => {
-                this.showNotification('Copied to clipboard', 'success');
-            },
-            (err) => {
-                console.error('Could not copy text: ', err);
-                this.showNotification('Failed to copy', 'error');
-            }
+        // Convert URLs to links
+        processed = processed.replace(
+            /(https?:\/\/[^\s]+)/g, 
+            '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
         );
+        
+        return processed;
     }
     
     /**
      * Show typing indicator
      */
     showTypingIndicator() {
-        // Remove existing typing indicator if any
+        // Remove existing indicator if any
         this.hideTypingIndicator();
         
-        // Create typing indicator container
-        const messageContainer = document.createElement('div');
-        messageContainer.className = 'message-container assistant-message-container';
-        messageContainer.id = 'typing-indicator-container';
+        // Create typing container
+        const typingContainer = document.createElement('div');
+        typingContainer.className = 'message-container assistant-message-container';
+        typingContainer.id = 'typing-indicator-container';
         
-        // Create message header with avatar and role
+        // Add header with avatar
         const messageHeader = document.createElement('div');
         messageHeader.className = 'message-header';
         
         const avatar = document.createElement('div');
         avatar.className = 'message-avatar';
         avatar.innerHTML = '<iconify-icon icon="ph:robot" width="16"></iconify-icon>';
-        
-        const roleName = document.createElement('span');
-        roleName.textContent = 'Claude';
-        
         messageHeader.appendChild(avatar);
-        messageHeader.appendChild(roleName);
         
-        // Create typing indicator element
+        const name = document.createElement('span');
+        name.textContent = 'Claude';
+        messageHeader.appendChild(name);
+        
+        typingContainer.appendChild(messageHeader);
+        
+        // Create typing indicator
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'message assistant-message typing-indicator';
-        typingIndicator.textContent = 'Claude is typing';
+        typingIndicator.textContent = 'Thinking...';
         
         // Add animated dots
-        const typingDots = document.createElement('div');
-        typingDots.className = 'typing-dots';
+        const dotsContainer = document.createElement('div');
+        dotsContainer.className = 'typing-dots';
         
         for (let i = 0; i < 3; i++) {
             const dot = document.createElement('div');
             dot.className = 'typing-dot';
-            typingDots.appendChild(dot);
+            dotsContainer.appendChild(dot);
         }
         
-        typingIndicator.appendChild(typingDots);
+        typingIndicator.appendChild(dotsContainer);
+        typingContainer.appendChild(typingIndicator);
         
-        // Assemble and add to chat
-        messageContainer.appendChild(messageHeader);
-        messageContainer.appendChild(typingIndicator);
-        
-        this.elements.messagesContainer.appendChild(messageContainer);
+        // Add to messages container
+        this.elements.messagesContainer.appendChild(typingContainer);
         
         // Scroll to bottom
         this.scrollToBottom();
-        
-        // Set state
-        this.isTyping = true;
     }
     
     /**
@@ -330,8 +256,62 @@ export class ChatInterface {
         if (typingIndicator) {
             typingIndicator.remove();
         }
+    }
+    
+    /**
+     * Format timestamp into a human-readable format
+     * @param {string} timestamp - ISO timestamp
+     * @returns {string} - Formatted time
+     */
+    formatTimestamp(timestamp) {
+        try {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return '';
+        }
+    }
+    
+    /**
+     * Scroll messages container to bottom
+     */
+    scrollToBottom() {
+        this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
+    }
+    
+    /**
+     * Auto-resize textarea based on content
+     */
+    autoResizeTextarea() {
+        const textarea = this.elements.userInput;
         
-        this.isTyping = false;
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        
+        // Set height based on scrollHeight (with max-height limit applied via CSS)
+        textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
+    }
+    
+    /**
+     * Copy text to clipboard
+     * @param {string} text - Text to copy
+     */
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Show temporary success notification
+            this.eventBus.publish('ui:notification', {
+                type: 'success',
+                message: 'Copied to clipboard',
+                duration: 2000
+            });
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            this.eventBus.publish('ui:notification', {
+                type: 'error',
+                message: 'Failed to copy to clipboard',
+                duration: 3000
+            });
+        });
     }
     
     /**
@@ -340,42 +320,22 @@ export class ChatInterface {
     clearChat() {
         // Ask for confirmation
         if (confirm('Are you sure you want to clear the chat history?')) {
-            // Keep only the first welcome message
-            const firstChild = this.elements.messagesContainer.firstChild;
-            this.elements.messagesContainer.innerHTML = '';
-            
-            if (firstChild) {
-                this.elements.messagesContainer.appendChild(firstChild);
+            // Remove all messages except the welcome message
+            while (this.elements.messagesContainer.childNodes.length > 1) {
+                this.elements.messagesContainer.removeChild(
+                    this.elements.messagesContainer.lastChild
+                );
             }
             
-            // Clear message history (but keep the welcome message if exists)
-            this.messageHistory = this.messageHistory.length > 0 ? 
-                [this.messageHistory[0]] : [];
+            // Clear message history array
+            this.messageHistory = [];
             
-            // Show notification
-            this.showNotification('Chat history cleared', 'info');
-        }
-    }
-    
-    /**
-     * Show a notification
-     * @param {string} message - Notification message
-     * @param {string} type - Notification type (info, success, warning, error)
-     */
-    showNotification(message, type = 'info') {
-        this.eventBus.publish('ui:notification', {
-            message,
-            type,
-            duration: 3000
-        });
-    }
-    
-    /**
-     * Scroll chat to bottom
-     */
-    scrollToBottom() {
-        if (this.elements.messagesContainer) {
-            this.elements.messagesContainer.scrollTop = this.elements.messagesContainer.scrollHeight;
+            // Notify about cleared chat
+            this.eventBus.publish('ui:notification', {
+                type: 'info',
+                message: 'Chat history cleared',
+                duration: 2000
+            });
         }
     }
 }
